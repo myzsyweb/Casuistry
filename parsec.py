@@ -5,7 +5,7 @@ import gc
 gc.disable()
 ##############info#######################
 """
-@auhor ee.zsy
+@author ee.zsy
 @date Nov.25,2011
 @date Nov.27,2010
 """
