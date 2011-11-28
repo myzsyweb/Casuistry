@@ -27,6 +27,7 @@ gc.disable()
 #calc 24
 #tail-rec
 #call/cc
+#export api
 #def parsec(string)
 ##s=seq("(",or(num,str),")")
 #num=
@@ -423,91 +424,7 @@ def eval2(sexp,env):
     return buildExp(sexp)(env)
 #=====================================try=======================
 ####let Blk return pair (cont,ret)
-##class BlkLmd2(Prc):
-##    def __init__(self,arg,blk,env):
-##        self.arg = arg
-##        self.bdy = blk
-##        self.env = env
-##    def __repr__(self):
-##        return 'LAMBDA '+object.__repr__()
-##    def apply(self,arg):
-##        rt = self.env.extend(self.arg,arg)#entend env here!!!
-##        return self.bdy.map(lambda x:x(rt,lambda y:y)).toPyList()[-1]#######do sth here#######do sth here
-##        #t=[0]
-##        #def ret(v):
-##        #    t[0] = v
-##        #reduce(lambda s,i:i(rt,s),self.bdy.toPyList(),ret)
-##        #return t[0]
-##        #ret b1 b2 b3
-##        #b3(e,b2(e,b1(e,ret)))
-##        #(lambda () (a) (b) 1)
-##        #b3(e,b2(e,b1(e,c)))
-##        #self.bdy:list<blk>
-##        #analyze-sequence
-##        """
-##        (define (analyze-sequence exps)
-##          (define (sequentially a b)
-##            (lambda (env succeed fail)
-##              (a env
-##                 ;; success continuation for calling a
-##                 (lambda (a-value fail2)
-##                   (b env succeed fail2))
-##                 ;; failure continuation for calling a
-##                 fail)))
-##          (define (loop first-proc rest-procs)
-##            (if (null? rest-procs)
-##                first-proc
-##                (loop (sequentially first-proc (car rest-procs))
-##                      (cdr rest-procs))))
-##          (let ((procs (map analyze exps)))
-##            (if (null? procs)
-##                (error "Empty sequence -- ANALYZE"))
-##            (loop (car procs) (cdr procs))))
-##        """
-##def buildExp2(sexp):
-##    def form(sexp):
-##        assert pairp(sexp)
-##        op = car(sexp)
-##        if op==Sym('if'):
-##            test = build(sexp.cdr.car)
-##            then = build(sexp.cdr.cdr.car)
-##            fail = build(sexp.cdr.cdr.cdr.car)
-##            return lambda env,c:c(then(env)if test(env) else fail(env))
-##        elif op==Sym('lambda'):
-##            body = build(sexp.cdr.cdr)
-##            return lambda env,c:c(BlkLmd2(sexp.cdr.car, body ,env))
-##        elif op==Sym('define'):
-##            val = build(sexp.cdr.cdr.car)
-##            return lambda env,c:c(env.define(sexp.cdr.car,val(env)))
-##        elif op==Sym('quote'):
-##            val = sexp.cdr.car
-##            return lambda env,c:c(val)
-##        raise Exception()
-##    def build(sexp):
-##        if pairp(sexp):
-##            if car(sexp) in [Sym('if'),Sym('lambda'),Sym('quote'),Sym('define')]:
-##                return form(sexp)
-##            op = build(car(sexp))
-##            arg = sexp.cdr.map(build)#######do sth here#######do sth here
-##            #reduce(lambda s,i:i(rt,s),self.bdy.toPyList(),ret)
-##            #get-args
-##            #analyze-application
-##            t=[0]
-##            def ret(val):
-##                t[0]=val
-##            return lambda env,c:c(op(env,ret).apply(arg.map(lambda exp:exp(env))))
-##        #op.apply(sexp.cdr.map(lambda x:eval(x,env)) if sexp.cdr else None)
-##        elif isa(sexp,Sym):
-##            return lambda env,c:c(env.lookup(sexp))
-##        else:
-##            return lambda env,c:c(sexp)
-##    return build(sexp)
-##def eval3(sexp,env):
-##    t=[0]
-##    def ret(val):
-##        t[0]=val
-##    buildExp2(sexp)(env,ret)
-##    return t[0]
+#tail-call needed
 #===============here
 ##let Blk return pair (cont,ret)
 class BlkLmd3(Prc):
@@ -1060,5 +977,6 @@ print eval4(read("""((lambda () (display "a") (display "b") (display "c") "d" 34
 print eval4(read("""121212""")[0],toplevel.extend())
 print eval4(read("""((lambda (p) (p 1))(lambda (x) (+ x 1)))""")[0],toplevel.extend())
 #toplevel.define("call/cc",BlkCwcc(toplevel))
-print eval4(read("""(call/cc (lambda (c) (c 1) 2))""")[0],toplevel.extend())
 print eval4(read("""call/cc""")[0],toplevel.extend())
+print eval4(read("""(call/cc (lambda (c) (c 1) 2))""")[0],toplevel.extend())
+
