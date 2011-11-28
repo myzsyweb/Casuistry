@@ -551,6 +551,25 @@ class BlkLmd3(Prc):
                 (error "Empty sequence -- ANALYZE"))
             (loop (car procs) (cdr procs))))
         """
+class Cont:
+    pass
+class BlkLmd4(Prc):
+    def __init__(self,arg,blk,env):
+        self.arg = arg
+        self.bdy = blk
+        self.env = env
+    def __repr__(self):
+        return 'LAMBDA '+object.__repr__()
+    def apply(self,arg):
+        rt = self.env.extend(self.arg,arg)
+        t=["err"]
+        def ret(val):
+            t[0] = val
+        self.bdy(rt,ret)(None)
+        return t[0]
+    def apply2(self,arg,cont):
+        rt = self.env.extend(self.arg,arg)
+        return self.bdy(rt,cont)(None)
 def buildExp3(sexp):
     def form(sexp):
         assert pairp(sexp)
@@ -563,8 +582,14 @@ def buildExp3(sexp):
             return lambda env,c:test(env,lambda v:then(env,c)if v else fail(env,c))
         elif op==Sym('lambda'):
             arg = sexp.cdr.car
-            body = sexp.cdr.cdr.map(build)#to one blk
-            return lambda env,c:c(BlkLmd3(arg, body ,env))
+            bodys = sexp.cdr.cdr.map(build)#to one blk
+            #[blk1,blk2,blk3,blk4]
+            #body = reduce(lambda s,i:build(s,lambda v:),sexp.cdr.cdr.toPyList(),ret)
+            #bodyw = lambda env,c:c(bodys.map(lambda blk:blk(env,lambda y:y)).toPyList()[-1])
+            bodyq = lambda env,c:reduce(lambda cont,blk:(lambda v:blk(env,cont)),reversed(bodys.toPyList()),c)
+            #[blk4,blk3,blk2,blk1]c ->blk3(e,(lambda v:blk4(e,c))
+            #lambda env,c:blk1(env,lambda v:blk2(env,lambda v:lastblk(env,c)))
+            return lambda env,c:c(BlkLmd4(arg, bodyq ,env))
         elif op==Sym('define'):
             name = sexp.cdr.car
             val = build(sexp.cdr.cdr.car)
@@ -582,8 +607,24 @@ def buildExp3(sexp):
             arg = sexp.cdr.map(build) if sexp.cdr else None#######do sth here#######do sth here
             #reduce(lambda s,i:i(rt,s),self.bdy.toPyList(),ret)
             #get-args
+            #lambda v
+            #blk1(env,lambda v:cons(v,bl2(env,lambda v:)))
+            def get_args(arg,env,cont):
+                #arg:[blk1,blk2mlk3...blkn]
+                #return lambda env,c:blk1(end,lambda v:cons(v,blk2(env,lambda v:cons(v,blkn(env,c)))
+                #bodyq = lambda env,c:reduce(lambda cont,blk:lambda v1:blk(env,lambda v2:cons(v1,v2)),reversed(bodys.toPyList()),c)
+                if nullp(arg):
+                    return cont(nil)
+                else:
+                    car(arg)(env,lambda v1:get_args(arg.cdr,env,lambda v2:cont(cons(v1,v2))))
+            #reduce(lambda cont,blk: blk(env,lambda v:) ,arg)
+            def app(obj,arg,cont):
+                if isa(obj,BlkLmd4):
+                    return obj.apply2(arg,cont)
+                else:
+                    return cont(obj.apply(arg))
+            return lambda env,c:op(env,lambda v1:get_args(arg,env,lambda v2:app(v1,v2,c)))
             #analyze-application
-            #return lambda env,c:c(op(env).apply(arg.map(lambda envv,cc:exp(env))))
             return lambda env,c:c(op(env,lambda op:op.apply(arg.map(lambda blk:blk(env,lambda y:y))if arg else None)))
         #op.apply(sexp.cdr.map(lambda x:eval(x,env)) if sexp.cdr else None)
         elif isa(sexp,Sym):
@@ -594,7 +635,7 @@ def buildExp3(sexp):
 def eval4(sexp,env):
     t=[0]
     def ret(val):
-        print ">",val
+        #print ">",val
         t[0] = val
     buildExp3(sexp)(env,ret)
     return t[0]                            
@@ -989,3 +1030,6 @@ print eval4(read("(+ 1 2)")[0],toplevel.extend())
 print eval4(read("(list 1 2 3)")[0],toplevel.extend())
 print eval4(read("1")[0],toplevel.extend())
 print eval4(read("*")[0],toplevel.extend())
+print eval2(read("""((lambda () (display "a") (display "b") (display "c") "d" 12121212))""")[0],toplevel.extend())
+print eval4(read("""((lambda () (display "a") (display "b") (display "c") "d" 343434))""")[0],toplevel.extend())
+print eval4(read("""121212""")[0],toplevel.extend())
