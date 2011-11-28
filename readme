@@ -3,6 +3,7 @@
 * TODO
 更多的测试代码
 尾递归（在Py中模拟）
+合并eval代码
 
 * 说明
 坑
@@ -53,5 +54,7 @@
  + SICP
  + IEEE
  + R5RS
+ + tinyscheme
+ + scm/slb
  + biwascheme
  + pyscheme

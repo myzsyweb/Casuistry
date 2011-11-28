@@ -978,5 +978,5 @@ print eval4(read("""121212""")[0],toplevel.extend())
 print eval4(read("""((lambda (p) (p 1))(lambda (x) (+ x 1)))""")[0],toplevel.extend())
 #toplevel.define("call/cc",BlkCwcc(toplevel))
 print eval4(read("""call/cc""")[0],toplevel.extend())
-print eval4(read("""(call/cc (lambda (c) (c 1) 2))""")[0],toplevel.extend())
+print eval4(read("""(call/cc (lambda (c) (display "show") (c 1) (display "hide") 2))""")[0],toplevel.extend())
 
