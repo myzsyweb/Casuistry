@@ -556,10 +556,10 @@ class Cont:
 class BlkLmd4(Prc):
     def __init__(self,arg,blk,env):
         self.arg = arg
-        self.bdy = blk
+        self.bdy = blk#getStmt()
         self.env = env
     def __repr__(self):
-        return 'LAMBDA '+object.__repr__()
+        return 'LAMBDA '+object.__repr__(self)
     def apply(self,arg):
         rt = self.env.extend(self.arg,arg)
         t=["err"]
@@ -570,6 +570,27 @@ class BlkLmd4(Prc):
     def apply2(self,arg,cont):
         rt = self.env.extend(self.arg,arg)
         return self.bdy(rt,cont)(None)
+class BlkCont(BlkLmd4):
+    def __init__(self,env,c):
+        self.env = env
+        self.bdy = c
+    def __repr__(self):
+        return "LAMBDA continuation"
+    def apply(self,arg):
+        raise Exception()
+    def apply2(self,arg,cont):
+        return self.bdy(arg.car)
+class BlkCwcc(BlkLmd4):
+    def __init__(self,env):
+        self.env = env
+    def __repr__(self):
+        return "LAMBDA 'call/cc'"
+    def apply(self,arg):
+        raise Exception()
+    def apply2(self,arg,cont):
+        if not isa(arg.car,BlkLmd4):
+            raise Exception()
+        return arg.car.apply2(cons(BlkCont(self.env,cont),nil),cont)
 def buildExp3(sexp):
     def form(sexp):
         assert pairp(sexp)
@@ -609,24 +630,28 @@ def buildExp3(sexp):
             #get-args
             #lambda v
             #blk1(env,lambda v:cons(v,bl2(env,lambda v:)))
+            args = lambda arg,env,con:reduce(lambda cont,blk:(lambda v1:blk(env,lambda v2:cont(cons(v1,v2)))),reversed(arg.toPyList() if arg else []),lambda v:con(nil))
             def get_args(arg,env,cont):
                 #arg:[blk1,blk2mlk3...blkn]
                 #return lambda env,c:blk1(end,lambda v:cons(v,blk2(env,lambda v:cons(v,blkn(env,c)))
-                #bodyq = lambda env,c:reduce(lambda cont,blk:lambda v1:blk(env,lambda v2:cons(v1,v2)),reversed(bodys.toPyList()),c)
+                #return lambda env,c:blk1(end,lambda v:cons(v,blk2(env,lambda v:c(cons(v,nil)))     
                 if nullp(arg):
                     return cont(nil)
                 else:
-                    car(arg)(env,lambda v1:get_args(arg.cdr,env,lambda v2:cont(cons(v1,v2))))
+                    return car(arg)(env,lambda v1:get_args(arg.cdr,env,lambda v2:cont(cons(v1,v2))))
             #reduce(lambda cont,blk: blk(env,lambda v:) ,arg)
             def app(obj,arg,cont):
                 if isa(obj,BlkLmd4):
                     return obj.apply2(arg,cont)
                 else:
                     return cont(obj.apply(arg))
+            #return lambda env,c:op(env,lambda v1:args(arg,env,lambda v2:app(v1,v2,c)))    
             return lambda env,c:op(env,lambda v1:get_args(arg,env,lambda v2:app(v1,v2,c)))
             #analyze-application
             return lambda env,c:c(op(env,lambda op:op.apply(arg.map(lambda blk:blk(env,lambda y:y))if arg else None)))
         #op.apply(sexp.cdr.map(lambda x:eval(x,env)) if sexp.cdr else None)
+        elif sexp==Sym('call/cc'):
+            return lambda env,c:c(BlkCwcc(env))
         elif isa(sexp,Sym):
             return lambda env,c:c(env.lookup(sexp))
         else:
@@ -1033,3 +1058,7 @@ print eval4(read("*")[0],toplevel.extend())
 print eval2(read("""((lambda () (display "a") (display "b") (display "c") "d" 12121212))""")[0],toplevel.extend())
 print eval4(read("""((lambda () (display "a") (display "b") (display "c") "d" 343434))""")[0],toplevel.extend())
 print eval4(read("""121212""")[0],toplevel.extend())
+print eval4(read("""((lambda (p) (p 1))(lambda (x) (+ x 1)))""")[0],toplevel.extend())
+#toplevel.define("call/cc",BlkCwcc(toplevel))
+print eval4(read("""(call/cc (lambda (c) (c 1) 2))""")[0],toplevel.extend())
+print eval4(read("""call/cc""")[0],toplevel.extend())
