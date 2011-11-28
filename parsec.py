@@ -7,7 +7,7 @@ gc.disable()
 """
 @author ee.zsy
 @date Nov.25,2011
-@date Nov.27,2010
+@date Nov.27,2011
 """
 ##############todo#######################
 #principle
@@ -16,8 +16,8 @@ gc.disable()
 #perfer to use class but not too many method
 #one piece code do one thing,independent
 #not do anything not necessary
-#api can change later,let it work first
-#just add sth. in some place
+#api can change/export later,let it work first
+#just add sth. in some place with new name or new case
 #impl the most simple case,then dispatch
 #not follow the principle
 
@@ -284,7 +284,7 @@ class Lmd(Prc):
         return 
     def __repr__(self):
         return str(('LAMBDA',self.lmd,'env'))
-    def apply(self,arg):
+    def apply(self,arg):#move the method to a func?
         #print "body>",self.bdy
         rt = self.env.extend(self.arg,arg)#entend env here!!!
         return self.bdy.map(lambda x:eval(x,rt)).toPyList()[-1]
@@ -353,13 +353,254 @@ def read(text):
 print read(code)
 print read("(+ a b c)")
 #######################runtime#############
-
 class Exp:
-    def call(self,env,con=None):
+    def __call__(self,env,cont=None):
         pass
+    def do(self):
+        pass
+class Blk:
+    def __init__(self,proc):
+        self.proc=proc
+    def __call__(self,env,cont=None):
+        self.proc(env)
+    def do(self):
+        pass
+class Ret:
+    pass
+class Cont:
+    pass
+class Ret:
+    pass
+def runSexp(cc):
+    while not isa(cc,Ret):
+        cc = cc.run()
+    else:
+        return cc.val()
+class BlkLmd(Prc):
+    def __init__(self,arg,blk,env):
+        self.arg = arg
+        self.bdy = blk
+        self.env = env
+    def __repr__(self):
+        return 'LAMBDA '+object.__repr__()
+    def apply(self,arg):
+        rt = self.env.extend(self.arg,arg)#entend env here!!!
+        return self.bdy.map(lambda x:x(rt)).toPyList()[-1]
+def buildExp(sexp):
+    def form(sexp):
+        assert pairp(sexp)
+        op = car(sexp)
+        if op==Sym('if'):
+            test = build(sexp.cdr.car)#eval(sexp.cdr.car,env)
+            then = build(sexp.cdr.cdr.car)
+            fail = build(sexp.cdr.cdr.cdr.car)
+            return lambda env:then(env)if test(env) else fail(env)
+        elif op==Sym('lambda'):
+            #body = build(sexp.cdr.cdr)
+            body = sexp.cdr.cdr.map(build)
+            return lambda env:BlkLmd(sexp.cdr.car, body ,env)
+        elif op==Sym('define'):
+            val = build(sexp.cdr.cdr.car)
+            return lambda env:env.define(sexp.cdr.car,val(env))
+        elif op==Sym('quote'):
+            val = sexp.cdr.car
+            return lambda env:val
+        raise Exception()
+    def build(sexp):
+        if pairp(sexp):
+            if car(sexp) in [Sym('if'),Sym('lambda'),Sym('quote'),Sym('define')]:
+                return form(sexp)
+            op = build(car(sexp))
+            arg = sexp.cdr.map(build) if sexp.cdr else None
+            return lambda env:op(env).apply(arg.map(lambda exp:exp(env)) if arg else None)
+        #op.apply(sexp.cdr.map(lambda x:eval(x,env)) if sexp.cdr else None)
+        elif isa(sexp,Sym):
+            return lambda env:env.lookup(sexp)
+        else:
+            return lambda env:sexp
+    return build(sexp)
+def eval2(sexp,env):
+    return buildExp(sexp)(env)
+#=====================================try=======================
+####let Blk return pair (cont,ret)
+##class BlkLmd2(Prc):
+##    def __init__(self,arg,blk,env):
+##        self.arg = arg
+##        self.bdy = blk
+##        self.env = env
+##    def __repr__(self):
+##        return 'LAMBDA '+object.__repr__()
+##    def apply(self,arg):
+##        rt = self.env.extend(self.arg,arg)#entend env here!!!
+##        return self.bdy.map(lambda x:x(rt,lambda y:y)).toPyList()[-1]#######do sth here#######do sth here
+##        #t=[0]
+##        #def ret(v):
+##        #    t[0] = v
+##        #reduce(lambda s,i:i(rt,s),self.bdy.toPyList(),ret)
+##        #return t[0]
+##        #ret b1 b2 b3
+##        #b3(e,b2(e,b1(e,ret)))
+##        #(lambda () (a) (b) 1)
+##        #b3(e,b2(e,b1(e,c)))
+##        #self.bdy:list<blk>
+##        #analyze-sequence
+##        """
+##        (define (analyze-sequence exps)
+##          (define (sequentially a b)
+##            (lambda (env succeed fail)
+##              (a env
+##                 ;; success continuation for calling a
+##                 (lambda (a-value fail2)
+##                   (b env succeed fail2))
+##                 ;; failure continuation for calling a
+##                 fail)))
+##          (define (loop first-proc rest-procs)
+##            (if (null? rest-procs)
+##                first-proc
+##                (loop (sequentially first-proc (car rest-procs))
+##                      (cdr rest-procs))))
+##          (let ((procs (map analyze exps)))
+##            (if (null? procs)
+##                (error "Empty sequence -- ANALYZE"))
+##            (loop (car procs) (cdr procs))))
+##        """
+##def buildExp2(sexp):
+##    def form(sexp):
+##        assert pairp(sexp)
+##        op = car(sexp)
+##        if op==Sym('if'):
+##            test = build(sexp.cdr.car)
+##            then = build(sexp.cdr.cdr.car)
+##            fail = build(sexp.cdr.cdr.cdr.car)
+##            return lambda env,c:c(then(env)if test(env) else fail(env))
+##        elif op==Sym('lambda'):
+##            body = build(sexp.cdr.cdr)
+##            return lambda env,c:c(BlkLmd2(sexp.cdr.car, body ,env))
+##        elif op==Sym('define'):
+##            val = build(sexp.cdr.cdr.car)
+##            return lambda env,c:c(env.define(sexp.cdr.car,val(env)))
+##        elif op==Sym('quote'):
+##            val = sexp.cdr.car
+##            return lambda env,c:c(val)
+##        raise Exception()
+##    def build(sexp):
+##        if pairp(sexp):
+##            if car(sexp) in [Sym('if'),Sym('lambda'),Sym('quote'),Sym('define')]:
+##                return form(sexp)
+##            op = build(car(sexp))
+##            arg = sexp.cdr.map(build)#######do sth here#######do sth here
+##            #reduce(lambda s,i:i(rt,s),self.bdy.toPyList(),ret)
+##            #get-args
+##            #analyze-application
+##            t=[0]
+##            def ret(val):
+##                t[0]=val
+##            return lambda env,c:c(op(env,ret).apply(arg.map(lambda exp:exp(env))))
+##        #op.apply(sexp.cdr.map(lambda x:eval(x,env)) if sexp.cdr else None)
+##        elif isa(sexp,Sym):
+##            return lambda env,c:c(env.lookup(sexp))
+##        else:
+##            return lambda env,c:c(sexp)
+##    return build(sexp)
+##def eval3(sexp,env):
+##    t=[0]
+##    def ret(val):
+##        t[0]=val
+##    buildExp2(sexp)(env,ret)
+##    return t[0]
+#===============here
+##let Blk return pair (cont,ret)
+class BlkLmd3(Prc):
+    def __init__(self,arg,blk,env):
+        self.arg = arg
+        self.bdy = blk
+        self.env = env
+    def __repr__(self):
+        return 'LAMBDA '+object.__repr__()
+    def apply(self,arg):
+        rt = self.env.extend(self.arg,arg)#entend env here!!!
+        return self.bdy.map(lambda blk:blk(rt,lambda y:y)).toPyList()[-1]#######do sth here#######do sth here
+        #t=[0]
+        #def ret(v):
+        #    t[0] = v
+        #reduce(lambda s,i:i(rt,s),self.bdy.toPyList(),ret)
+        #return t[0]
+        #ret b1 b2 b3
+        #b3(e,b2(e,b1(e,ret)))
+        #(lambda () (a) (b) 1)
+        #b3(e,b2(e,b1(e,c)))
+        #self.bdy:list<blk>
+        #analyze-sequence
+        """
+        (define (analyze-sequence exps)
+          (define (sequentially a b)
+            (lambda (env succeed fail)
+              (a env
+                 ;; success continuation for calling a
+                 (lambda (a-value fail2)
+                   (b env succeed fail2))
+                 ;; failure continuation for calling a
+                 fail)))
+          (define (loop first-proc rest-procs)
+            (if (null? rest-procs)
+                first-proc
+                (loop (sequentially first-proc (car rest-procs))
+                      (cdr rest-procs))))
+          (let ((procs (map analyze exps)))
+            (if (null? procs)
+                (error "Empty sequence -- ANALYZE"))
+            (loop (car procs) (cdr procs))))
+        """
+def buildExp3(sexp):
+    def form(sexp):
+        assert pairp(sexp)
+        op = car(sexp)
+        if op==Sym('if'):
+            test = build(sexp.cdr.car)
+            then = build(sexp.cdr.cdr.car)
+            fail = build(sexp.cdr.cdr.cdr.car)
+            #return lambda env,c:c(then(env)if test(env) else fail(env))
+            return lambda env,c:test(env,lambda v:then(env,c)if v else fail(env,c))
+        elif op==Sym('lambda'):
+            arg = sexp.cdr.car
+            body = sexp.cdr.cdr.map(build)#to one blk
+            return lambda env,c:c(BlkLmd3(arg, body ,env))
+        elif op==Sym('define'):
+            name = sexp.cdr.car
+            val = build(sexp.cdr.cdr.car)
+            #return lambda env,c:c(env.define(sexp.cdr.car,val(env)))
+            return lambda env,c:c(val(env,lambda v:c(env.define(name,v))))
+        elif op==Sym('quote'):
+            val = sexp.cdr.car
+            return lambda env,c:c(val)
+        raise Exception()
+    def build(sexp):
+        if pairp(sexp):
+            if car(sexp) in [Sym('if'),Sym('lambda'),Sym('quote'),Sym('define')]:
+                return form(sexp)
+            op = build(car(sexp))
+            arg = sexp.cdr.map(build) if sexp.cdr else None#######do sth here#######do sth here
+            #reduce(lambda s,i:i(rt,s),self.bdy.toPyList(),ret)
+            #get-args
+            #analyze-application
+            #return lambda env,c:c(op(env).apply(arg.map(lambda envv,cc:exp(env))))
+            return lambda env,c:c(op(env,lambda op:op.apply(arg.map(lambda blk:blk(env,lambda y:y))if arg else None)))
+        #op.apply(sexp.cdr.map(lambda x:eval(x,env)) if sexp.cdr else None)
+        elif isa(sexp,Sym):
+            return lambda env,c:c(env.lookup(sexp))
+        else:
+            return lambda env,c:c(sexp)
+    return build(sexp)
+def eval4(sexp,env):
+    t=[0]
+    def ret(val):
+        print ">",val
+        t[0] = val
+    buildExp3(sexp)(env,ret)
+    return t[0]                            
 ###################eval##########################
-    #@button("I'm sure!")
-    #def submit(self):pass
+#@button("I'm sure!")
+#def submit(self):pass
 sform = []
 smacro = [Sym('define'),Sym('begin'),Sym('cond'),Sym('let'),Sym('case')]#hash later
 def macro(sexp,env):
@@ -471,7 +712,7 @@ def eval(sexp,env):
         if car(sexp) in smacro:
             return macro(sexp,env)
         op = eval(car(sexp),env)
-        if isa(op,Prc):
+        if isa(op,Prc):#let apply throws exception,remove 'if'
             return op.apply(sexp.cdr.map(lambda x:eval(x,env)) if sexp.cdr else None)
         else:
             raise Exception(type(sexp),sexp)
@@ -485,7 +726,7 @@ def build(*arg,**kw):
     return lambda f:f(*arg,**kw)
 def bldr(f):
     return f()
-def env():
+def genv():
     return toplevel
 def check(ture):
     if not ture:
@@ -493,6 +734,9 @@ def check(ture):
 toplevel = Env()
 def defun(name,env):
     return lambda f:env.define(Sym(name),Prc(f))
+def bindPyFunc(env,name,proc):
+    return env.define(name,Prc(lambda arg:apply(proc,arg.toPyList())))
+
 @build(toplevel)
 def defineToplevel(env):
     @defun("display",env)
@@ -546,13 +790,16 @@ def defineToplevel(env):
     @defun("-",env)
     def _(x):
         return x.car-x.cdr.car
-toplevel.define("+",Prc(lambda arg:reduce(lambda x,y:x+y,arg.toPyList(),0)))
+toplevel.define("+",Prc(lambda arg:reduce(lambda x,y:x+y,arg.toPyList() if arg else [],0)))
 #toplevel.define("-",Prc(lambda arg:reduce(lambda x,y:x-y,arg.toPyList())))
-toplevel.define("*",Prc(lambda arg:reduce(lambda x,y:x*y,arg.toPyList(),1)))
+toplevel.define("*",Prc(lambda arg:reduce(lambda x,y:x*y,arg.toPyList()if arg else [],1)))
 toplevel.define("/",Prc(lambda arg:reduce(lambda x,y:x/y,arg.toPyList())))
 toplevel.define("pair?",Prc(lambda arg:pairp(arg.car)))
-toplevel.define("null?",Prc(lambda arg:nullp(arg.car)))
-toplevel.define("number?",Prc(lambda arg:numberp(arg.car)))
+#toplevel.define("null?",Prc(lambda arg:nullp(arg.car)))
+bindPyFunc(toplevel,"null?",nullp)
+bindPyFunc(toplevel,"number?",numberp)
+#toplevel.define("number?",Prc(lambda arg:numberp(arg.car)))
+#toplevel.define("number?",Prc(lambda arg:numberp(arg.car)))
 toplevel.define("not",Prc(lambda arg:not arg.car))
 toplevel.define("list",Lmd(read('(lambda x x)')[0],toplevel))
 toplevel.define("cdar",Lmd(read('(lambda (x) (cdr (car x)))')[0],toplevel))
@@ -614,9 +861,14 @@ def defineType():
 #############conti###############
 #######################repl#################
 class S:
+##    def __init__(self):
+##        self.env = toplevel.extend()
     @staticmethod
     def read(text):
         return read(text)[0]
+##    @staticmethod
+##    def eval(sexp,env):
+##        return eval(sexp,env)
 class Repl():
     pass
 def repl():
@@ -711,6 +963,9 @@ class Test(unittest.TestCase):
         self.assertTrue(not eval(read("""(pair? 1)""")[0],toplevel.extend()))
         self.assertEqual( eval(read("""(cadr (member 2 '(1 2 3)))""")[0],toplevel.extend()) ,3)
         self.assertTrue(not eval(read("""(member 4 '(1 2 3))""")[0],toplevel.extend()))
+    def test_calc24(self):
+        #print eval(read(code_calc24)[0],toplevel.extend())
+        pass
 if __name__ == '__main__':
     pass
     #repl()
@@ -721,4 +976,16 @@ print eval(read("""((lambda ()
 (define (f x) x)
 (f 1)
 ))""")[0],toplevel.extend())
-print eval(read(code_calc24)[0],toplevel.extend())
+print eval(read("(+ 1 2)")[0],toplevel.extend())
+print eval2(read("(+ 1 2)")[0],toplevel.extend())
+print eval2(read("(list 1 2 3)")[0],toplevel.extend())
+print eval(read("(*)")[0],toplevel.extend())
+print eval2(read("(*)")[0],toplevel.extend())
+print eval4(read("(*)")[0],toplevel.extend())
+print eval(read("((lambda (x) (+ x 1)) 7 )")[0],toplevel.extend())
+print eval2(read("((lambda (x) (+ x 1)) 7 )")[0],toplevel.extend())
+print eval4(read("((lambda (x) (+ x 1)) 7 )")[0],toplevel.extend())
+print eval4(read("(+ 1 2)")[0],toplevel.extend())
+print eval4(read("(list 1 2 3)")[0],toplevel.extend())
+print eval4(read("1")[0],toplevel.extend())
+print eval4(read("*")[0],toplevel.extend())
