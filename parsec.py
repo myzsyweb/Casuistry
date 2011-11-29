@@ -1,8 +1,13 @@
 #!python2.7
-import sys
-sys.setrecursionlimit(2**15-1)
-import gc
-gc.disable()
+if 0:
+    import sys
+    import gc
+    sys.setrecursionlimit(2**15-1)
+    gc.disable()
+else:
+    import sys
+    import gc
+    sys.setrecursionlimit(500)
 ##############info#######################
 """
 @author ee.zsy
@@ -448,26 +453,11 @@ class BlkLmd3(Prc):
         #b3(e,b2(e,b1(e,c)))
         #self.bdy:list<blk>
         #analyze-sequence
-        """
-        (define (analyze-sequence exps)
-          (define (sequentially a b)
-            (lambda (env succeed fail)
-              (a env
-                 ;; success continuation for calling a
-                 (lambda (a-value fail2)
-                   (b env succeed fail2))
-                 ;; failure continuation for calling a
-                 fail)))
-          (define (loop first-proc rest-procs)
-            (if (null? rest-procs)
-                first-proc
-                (loop (sequentially first-proc (car rest-procs))
-                      (cdr rest-procs))))
-          (let ((procs (map analyze exps)))
-            (if (null? procs)
-                (error "Empty sequence -- ANALYZE"))
-            (loop (car procs) (cdr procs))))
-        """
+#use Trampoline here
+        #lambda env,c:c(v) -> lambda env,c:Trl(c,v) 
+class DelayCall:
+    def __init__(self,func,*arg,**kw):
+        pass
 class Cont:
     pass
 class BlkLmd4(Prc):
@@ -482,11 +472,11 @@ class BlkLmd4(Prc):
         t=["err"]
         def ret(val):
             t[0] = val
-        self.bdy(rt,ret)(None)
+        self.bdy(rt,ret)#(None)
         return t[0]
     def apply2(self,arg,cont):
         rt = self.env.extend(self.arg,arg)
-        return self.bdy(rt,cont)(None)
+        return self.bdy(rt,cont)#(None)
 class BlkCont(BlkLmd4):
     def __init__(self,env,c):
         self.env = env
@@ -525,14 +515,28 @@ def buildExp3(sexp):
             #body = reduce(lambda s,i:build(s,lambda v:),sexp.cdr.cdr.toPyList(),ret)
             #bodyw = lambda env,c:c(bodys.map(lambda blk:blk(env,lambda y:y)).toPyList()[-1])
             bodyq = lambda env,c:reduce(lambda cont,blk:(lambda v:blk(env,cont)),reversed(bodys.toPyList()),c)
+            #self.bdy(rt,cont)#(None)
             #[blk4,blk3,blk2,blk1]c ->blk3(e,(lambda v:blk4(e,c))
             #lambda env,c:blk1(env,lambda v:blk2(env,lambda v:lastblk(env,c)))
+            def get_seqs(sexpbodys):
+                def seq(x,y):
+                    return lambda env,c:x(env,lambda v:y(env,c))
+                def loop(h,t):
+                    if nullp(t):
+                        return h
+                    else:
+                        return loop(seq(h,t.car),t.cdr)
+                bodys = sexpbodys.map(build)
+                return loop(bodys.car,bodys.cdr)
+            #print '>>>>>>>>>>>>>>>>>>>',get_seqs(sexp.cdr.cdr)
+            return lambda env,c:c(BlkLmd4(arg, get_seqs(sexp.cdr.cdr) ,env))
             return lambda env,c:c(BlkLmd4(arg, bodyq ,env))
         elif op==Sym('define'):
             name = sexp.cdr.car
             val = build(sexp.cdr.cdr.car)
             #return lambda env,c:c(env.define(sexp.cdr.car,val(env)))
-            return lambda env,c:c(val(env,lambda v:c(env.define(name,v))))
+            #return lambda env,c:c(val(env,lambda v:c(env.define(name,v))))
+            return lambda env,c:val(env,lambda v:c(env.define(name,v)))
         elif op==Sym('quote'):
             val = sexp.cdr.car
             return lambda env,c:c(val)
@@ -979,4 +983,47 @@ print eval4(read("""((lambda (p) (p 1))(lambda (x) (+ x 1)))""")[0],toplevel.ext
 #toplevel.define("call/cc",BlkCwcc(toplevel))
 print eval4(read("""call/cc""")[0],toplevel.extend())
 print eval4(read("""(call/cc (lambda (c) (display "show") (c 1) (display "hide") 2))""")[0],toplevel.extend())
+print eval(read("""((lambda ()
+(define f (lambda (n s) (if (< n 1) s (f (- n 1) (* n s)))))
+(f 10 1)
+))""")[0],toplevel.extend())
+print eval4(read("""((lambda ()
+(define f (lambda (n s) (if (< n 1) s (f (- n 1) (* n s)))))
+(f 7 1)
+))""")[0],toplevel.extend())
+print eval4(read("""((lambda ()
+(define a 1)
+a
+))""")[0],toplevel.extend())
+def fac1(n,s=1):
+    if n<=0:
+        return s
+    else:
+        return fac1(n-1,s*n)
+def fac2(n,s=1):
+    if n<=0:
+        return None,s
+    else:
+        return fac2,(n-1,s*n)
+def runtail(f,*x):
+    while f:
+        f, x = f(*x)
+    return x          
+#print runtail(fac2,1000)
+def tailcall(func):
+    def run(*arg):
+        c, x = func(*arg)
+        while 1:
+            if c is None:
+                return x
+            c, x = func(*x)
+    return run
+@tailcall
+def fac3(n,s=1):
+    if n<=0:
+        return None,s
+    else:
+        return fac2,(n-1,s*n)
+#print fac3(1000)    
+
 
