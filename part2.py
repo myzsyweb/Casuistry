@@ -2,6 +2,8 @@
 from parsec import *
 import sys
 sys.setrecursionlimit(100)
+def pyListToSexp(lst):
+    return reduce(lambda s,i:cons(i,s),reversed(lst),nil)
 def id(self):
     return self
 class Lambda:
@@ -9,45 +11,48 @@ class Lambda:
         self.func=func
     def __call__(self,*arg,**kw):
         return self.func(*arg,**kw)
-class Tuk(tuple):
-    pass
+class IdT:
     def __repr__(self):
-        return 'Tuk %s'%tuple.__repr__(self)
+        return 'Type %s %s'%(self.__class__,tuple.__repr__(self))    
+class Tuk(tuple):
+    def __repr__(self):
+        return 'Type %s %s'%(self.__class__,tuple.__repr__(self))
 def tuk(cont,arg):
     assert isa(arg,tuple)
-    #return cont(*arg)
-    #print "tuk>",cont,arg
     return Tuk((cont,arg))
+def cnt(self):
+    return self
 def runtail(f,*x):
-    #print "runtail>",f,x
     while f:
-        #print "runtail>>",f,x,f(*x)
+#        try:
+            #print "runtail>>>",x
         f, x = f(*x)
+#        except Exception as e:
+#            print "runtail>",e,f.__class__,x
+#            raise Exception(e)
     return x   
 def tukrun(tuk):
-##    if not isa(tuk,Tuk):
-##        print "ERR>",type(tuk),tuk
-##        raise Exception(type(tuk),tuk)
     assert isa(tuk,Tuk)
-    return runtail(tuk[0],*tuk[1])
-class BlkLmd9(Prc):
-    def __init__(self,arg,blk,env):
-        self.arg = arg
-        self.bdy = blk
-        self.env = env
-    def __repr__(self):
-        return 'LAMBDA '+object.__repr__()
-    def apply(self,arg):
-        rt = self.env.extend(self.arg,arg)#entend env here!!!
-        return self.bdy.map(lambda blk:blk(rt,lambda y:y)).toPyList()[-1]#######do sth here#######do sth here
-
-#use Trampoline here
-        #lambda env,c:c(v) -> lambda env,c:Trl(c,v) 
-class DelayCall:
-    def __init__(self,func,*arg,**kw):
-        pass
-class Cont:
+    return runtail(tuk[0],*tuk[1]) 
+##class DelayCall:
+##    def __init__(self,func,*arg,**kw):
+##        pass
+##class Cont:
+##    pass
+class Apy:
     pass
+class ApyC:
+    pass
+class ApyCT:
+    pass
+class PyFunc(Prc):
+    def __init__(self,func):
+        self.func = func
+    def __call__(self,*arg):
+        return self.func(*arg)
+    def apply(self,arg):
+        assert pairp(arg) or nullp(arg)
+        return self.func(sexpToPyList(arg))
 class BlkLmd9(Prc):
     def __init__(self,arg,blk,env):
         self.arg = arg
@@ -55,19 +60,23 @@ class BlkLmd9(Prc):
         self.env = env
     def __repr__(self):
         return 'LAMBDA '+object.__repr__(self)
+    def __call__(self,*arg):
+        print ">>>",pyListToSexp(arg)
+        return self.apply(pyListToSexp(arg))
     def apply(self,arg):
+##        raise Exception()
         rt = self.env.extend(self.arg,arg)
-        t=["err"]
-        def ret(val):
-            t[0] = val
-        self.bdy(rt,ret)
-        return t[0]
-    def apply2(self,arg,cont):
-        rt = self.env.extend(self.arg,arg)
-        return self.bdy(rt,cont)
+##        t = ["err"]
+##        def ret(val):
+##            t[0] = val
+##        print ">>>>>>>>>>>",tukrun(self.bdy(rt,ret))
+        return eval9(cons(self,arg),rt)#!!
+##    def apply2(self,arg,cont):
+##        rt = self.env.extend(self.arg,arg)
+##        return self.bdy(rt,cont)
     def apply9(self,arg,cont):
         rt = self.env.extend(self.arg,arg)
-        print "????",self.bdy(rt,cont)
+        #print "????",self.bdy(rt,cont)
         return self.bdy(rt,cont)
 class BlkCont9(BlkLmd9):
     def __init__(self,env,c):
@@ -76,6 +85,7 @@ class BlkCont9(BlkLmd9):
     def __repr__(self):
         return "LAMBDA continuation"
     def apply(self,arg):
+        BlkLmd9.apply(self,arg)
         raise Exception()
     def apply2(self,arg,cont):
         return self.bdy(arg.car)
@@ -87,15 +97,12 @@ class BlkCwcc9(BlkLmd9):
     def __repr__(self):
         return "LAMBDA 'call/cc'"
     def apply(self,arg):
+        BlkLmd9.apply(self,arg)
         raise Exception()
-    def apply2(self,arg,cont):
-        if not isa(arg.car,BlkLmd9):
-            raise Exception()
-        return arg.car.apply2(cons(BlkCont(self.env,cont),nil),cont)
     def apply9(self,arg,cont):
         if not isa(arg.car,BlkLmd9):
             raise Exception()
-        return arg.car.apply2(cons(BlkCont(self.env,cont),nil),cont)
+        return arg.car.apply9(cons(BlkCont9(self.env,cont),nil),cont)
 def buildExp9(sexp):
     def form(sexp):
         assert pairp(sexp)
@@ -119,7 +126,7 @@ def buildExp9(sexp):
                         return loop(seq(h,t.car),t.cdr)
                 bodys = sexpbodys.map(build)
                 return loop(bodys.car,bodys.cdr)
-            return lambda env,c:tuk(c,(BlkLmd4(arg, get_seqs(sexp.cdr.cdr) ,env),))
+            return lambda env,c:tuk(c,(BlkLmd9(arg, get_seqs(sexp.cdr.cdr) ,env),))
         elif op==Sym('define'):
             name = sexp.cdr.car
             val = build(sexp.cdr.cdr.car)
@@ -145,6 +152,7 @@ def buildExp9(sexp):
                     return car(arg)(env,lambda v1:get_args(arg.cdr,env,lambda v2:cont(cons(v1,v2))))
             def app(obj,arg,cont):
                 if isa(obj,BlkLmd4):
+                    raise Exception() 
                     return obj.apply2(arg,cont)
                 if isa(obj,BlkLmd9):
                     return obj.apply9(arg,cont)
@@ -152,7 +160,7 @@ def buildExp9(sexp):
                     return cont(obj.apply(arg))  
             return lambda env,c:tuk(op,(env,lambda v1:get_args(arg,env,lambda v2:app(v1,v2,c))))
         elif sexp==Sym('call/cc'):
-            return lambda env,c:tuk(c,(BlkCwcc(env),))
+            return lambda env,c:tuk(c,(BlkCwcc9(env),))
         elif isa(sexp,Sym):
             return lambda env,c:tuk(c,(env.lookup(sexp),))
         else:
@@ -191,3 +199,19 @@ print eval9(read("""((lambda ()
     (define f (lambda (n s) (if (< n 1) s (f (- n 1) (* n s)))))
     (f 1000 1)
     ))""")[0],toplevel.extend())
+func_f = eval9(read("""((lambda ()
+    (define f (lambda (x) (+ x 1)))
+    f
+    ))""")[0],toplevel.extend())
+#print eval9(read("(f 2)")[0],toplevel.extend())
+#print func_f.__class__,func_f
+print eval9(read("""((lambda ()
+     (define f (lambda (x) (display "IIIIIIIIIIIIIIIIIIIIIIIIIII") (+ x 1)))
+     (display "LLLLLLLLLLLLLLLLLL")
+     f
+    ))""")[0],toplevel.extend()).apply(cons(1,nil))
+#print ,func_f(5),func_f.apply(cons(3,nil))
+print eval9(read("""((lambda (p) (p 1))(lambda (x) (+ x 1)))""")[0],toplevel.extend())
+print eval9(read("""call/cc""")[0],toplevel.extend())
+print eval9(read("""(call/cc (lambda (c) (display "show") (c 1) (display "hide") 2))""")[0],toplevel.extend())
+

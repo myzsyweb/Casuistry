@@ -1,4 +1,4 @@
-#!python2.7
+#!python27
 if 0:
     import sys
     import gc
@@ -200,8 +200,9 @@ def sexpToPyList(pair):
         pyList.append(car(pair))
         pair = cdr(pair)
     return pyList
+    #must no rec here!
 def listp(lst):
-    pass
+    raise NotImplementedError()
 class T:
     pass
 class Char:#not use it,do as python do
