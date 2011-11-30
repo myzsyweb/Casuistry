@@ -4,8 +4,11 @@ import sys
 sys.setrecursionlimit(100)
 def pyListToSexp(lst):
     return reduce(lambda s,i:cons(i,s),reversed(lst),nil)
+def pyListToPair(lst):
+    return reduce(lambda s,i:cons(i,s),reversed(lst),nil)
 def id(self):
     return self
+
 class Lambda:
     def __init__(self,func):
         self.func=func
@@ -180,38 +183,45 @@ if 0:
     (define f (lambda (n s) (if (< n 1) s (f (- n 1) (* n s)))))
     (f 7 1)
     ))""")[0],toplevel.extend())
+def peekSexp(code):
+    return read(code)
+def read1(code):
+    return read(code)[0]
+class Typ:
+    @staticmethod
+    def pairp(obj):
+        return pairp(obj)
+class Scm:
+    def __init__(self,toplevel=toplevel):
+        self._env = toplevel.extend()
+    def sh(self,code):
+        return eval9(read(code)[0],self._env)
+    def env(self):
+        return self._env
+    def repl(self):
+        while True:
+            try:
+                print eval(self.sh(raw_input('scm> ')),self._env)
+            except Exception as e:
+                print e        
+    @staticmethod
+    def read(sexp):
+        return read(code)[0]
+    @staticmethod
+    def eval(sexp,env):
+        return eval9(sexp,env)
+    @staticmethod
+    def nilEnv(sexp,env):
+        return Env()
 
-print eval9(read("""1""")[0],toplevel.extend())
-print eval9(read("""(+ 1 1)""")[0],toplevel.extend())
-print eval9(read("(lambda (x) (+ x 1))")[0],toplevel.extend())
-print eval9(read("((lambda (x) (+ x 1)) 7 )")[0],toplevel.extend())
-print eval9(read("""((lambda ()
-(quote (+ 1 2))
-))""")[0],toplevel.extend())
-print eval9(read("""((lambda ()
-(if (> 1 2) 3 4)
-))""")[0],toplevel.extend())
-print eval9(read("""((lambda ()
-(define a 1)
-a
-))""")[0],toplevel.extend())
-print eval9(read("""((lambda ()
-    (define f (lambda (n s) (if (< n 1) s (f (- n 1) (* n s)))))
-    (f 1000 1)
-    ))""")[0],toplevel.extend())
-func_f = eval9(read("""((lambda ()
-    (define f (lambda (x) (+ x 1)))
-    f
-    ))""")[0],toplevel.extend())
-#print eval9(read("(f 2)")[0],toplevel.extend())
-#print func_f.__class__,func_f
 print eval9(read("""((lambda ()
      (define f (lambda (x) (display "IIIIIIIIIIIIIIIIIIIIIIIIIII") (+ x 1)))
      (display "LLLLLLLLLLLLLLLLLL")
      f
     ))""")[0],toplevel.extend()).apply(cons(1,nil))
-#print ,func_f(5),func_f.apply(cons(3,nil))
-print eval9(read("""((lambda (p) (p 1))(lambda (x) (+ x 1)))""")[0],toplevel.extend())
-print eval9(read("""call/cc""")[0],toplevel.extend())
-print eval9(read("""(call/cc (lambda (c) (display "show") (c 1) (display "hide") 2))""")[0],toplevel.extend())
-
+print eval(cons(eval9(read("""
+((lambda ()
+     (define f (lambda () "III"))
+     f
+))
+""")[0],toplevel.extend()),nil),toplevel.extend())

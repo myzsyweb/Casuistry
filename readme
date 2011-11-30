@@ -28,8 +28,10 @@ ee.zsy
 单独实现了初步支持call/cc的eval版本，之后建立导出的API的时候再来合并代码吧。
 如果call/cc支持多返回值的话，又得重实现一个eval了，虽然代码可照搬。
 ** Nov.29
-Trampolining让eval可以尾递归，函数尾部自己调用自己不再StackOverflow了。
-
+用Trampoline让eval可以尾递归，函数尾部自己调用自己不再StackOverflow了。
+另外让py可以调用scm里面返回的lambda表达式了，最然暂且只是序列形式的参数。
+** Nov.30
+调整API来独立出测试代码，Repl也以单独的文件提供，顺带合并代码和功能
 
 * TODO2
  + 只做TODO1里面的事情
@@ -41,6 +43,7 @@ Trampolining让eval可以尾递归，函数尾部自己调用自己不再StackOverflow了。
  + 模块化代码
  + quote词法以及宏
  + 持久化
+ + 让env成为first-class
 ** 优先级更不高的TOGO
  + 性能啊
  + 整理代码
