@@ -36,9 +36,9 @@ class Test(unittest.TestCase):
         
         
 print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-from part2 import eval9,read,toplevel
-
-
+from part2 import eval9
+s = Scm()
+print s.sh("((lambda x (+ (car x) (car (cdr x)))) 1 2)")
 if __name__ == '__main__':
     import sys
     sys.setrecursionlimit(500)
