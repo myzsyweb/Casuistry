@@ -16,7 +16,7 @@ def id(self):
 ##        return self.func(*arg,**kw)
 class IdT:
     def __repr__(self):
-        return 'Type %s %s'%(self.__class__,tuple.__repr__(self))    
+        return 'Type %s %s'%(self.__class__,tuple.__repr__(self))
 class Tuk(tuple):
     def __repr__(self):
         return 'Type %s %s'%(self.__class__,tuple.__repr__(self))
@@ -33,10 +33,10 @@ def runtail(f,*x):
 #        except Exception as e:
 #            print "runtail>",e,f.__class__,x
 #            raise Exception(e)
-    return x   
+    return x
 def tukrun(tuk):
     assert isa(tuk,Tuk)
-    return runtail(tuk[0],*tuk[1]) 
+    return runtail(tuk[0],*tuk[1])
 ##class DelayCall:
 ##    def __init__(self,func,*arg,**kw):
 ##        pass
@@ -66,7 +66,7 @@ class BlkLmd9(Prc):
     def __call__(self,*arg):
         print ">>>",pyListToSexp(arg)
         return self.apply(pyListToSexp(arg))
-    def apply(self,arg): 
+    def apply(self,arg):
         rt = self.env.extend(self.arg,arg)
         def quote(arg):
             return cons('quote',cons(arg,nil))
@@ -100,7 +100,16 @@ class BlkCwcc9(BlkLmd9):
         if not isa(arg.car,BlkLmd9):
             raise Exception()
         return arg.car.apply9(cons(BlkCont9(self.env,cont),nil),cont)
-
+class BlkApp9(BlkLmd9):
+    def __init__(self):
+        pass
+    def __repr__(self):
+        return 'LAMBDA '+object.__repr__(self)
+    def apply9(self,arg,cont):
+        if isa(arg.car,BlkLmd9):
+            return arg.car.apply9(arg.cdr.car,cont)
+        else:
+            return cont(arg.car.apply(arg.cdr.car))
 ##def macroExpend(sexp):
 ##    pass
 
@@ -110,6 +119,16 @@ topmacro = {}
 topenvrn = Env()
 def buildExp9(sexp):
     raw_define = Sym('::define')
+    def seqs(sexpbodys):
+        def seq(x,y):
+            return lambda env,c:tuk(x,(env,lambda v:y(env,c)))
+        def loop(h,t):
+            if nullp(t):
+                return h
+            else:
+                return loop(seq(h,t.car),t.cdr)
+        bodys = sexpbodys.map(build)#build once
+        return loop(bodys.car,bodys.cdr)
     def form(sexp):
         assert pairp(sexp)
         op = car(sexp)
@@ -120,30 +139,28 @@ def buildExp9(sexp):
             return lambda env,c:tuk(test,(env,lambda v:then(env,c)if v else fail(env,c)))
         elif op==Sym('lambda'):
             arg = sexp.cdr.car
-            bodys = sexp.cdr.cdr.map(build)#to one blk
+            #bodys = sexp.cdr.cdr.map(build)#to one blk
             #bodyq = lambda env,c:tuk(reduce,(lambda cont,blk:(lambda v:blk(env,cont)),reversed(bodys.toPyList()),c))
-            def get_seqs(sexpbodys):
-                def seq(x,y):
-                    return lambda env,c:tuk(x,(env,lambda v:y(env,c)))
-                def loop(h,t):
-                    if nullp(t):
-                        return h
-                    else:
-                        return loop(seq(h,t.car),t.cdr)
-                bodys = sexpbodys.map(build)
-                return loop(bodys.car,bodys.cdr)
-            return lambda env,c:tuk(c,(BlkLmd9(arg, get_seqs(sexp.cdr.cdr) ,env),))
+            return lambda env,c:tuk(c,(BlkLmd9(arg, seqs(sexp.cdr.cdr) ,env),))
         elif op==raw_define:
             name = sexp.cdr.car
             val = build(sexp.cdr.cdr.car)
             return lambda env,c:tuk(val,(env,lambda v:c(env.define(name,v))))
+        elif op==Sym('::begin'):
+            bodys = sexp.cdr.map(build)
+            return seqs(sexp.cdr)
+            #return lambda env,c:tuk(val,(env,lambda v:c(env.define(name,v))))
+            #return seqs(bodys)
+            #return tukSeqs(bodys)
+            #return lambda env,c:tuk(val,(env,lambda v:c(env.define(name,v))))
+        #define-syntax
         elif op==Sym('quote'):
             val = sexp.cdr.car
             return lambda env,c:tuk(c,(val,))
-        raise Exception()    
+        raise Exception()
     def build(sexp):
         if pairp(sexp):
-            if car(sexp) in [Sym('if'),Sym('lambda'),Sym('quote'),raw_define]:
+            if car(sexp) in [Sym('if'),Sym('lambda'),Sym('quote'),Sym('::begin'),raw_define]:
                 return form(sexp)
             if car(sexp) in topmacro:
                 #raise "define"
@@ -157,12 +174,12 @@ def buildExp9(sexp):
                     return car(arg)(env,lambda v1:get_args(arg.cdr,env,lambda v2:cont(cons(v1,v2))))
             def app(obj,arg,cont):
 ##                if isa(obj,BlkLmd4):
-##                    raise Exception() 
+##                    raise Exception()
 ##                    return obj.apply2(arg,cont)
                 if isa(obj,BlkLmd9):
                     return obj.apply9(arg,cont)
                 else:
-                    return cont(obj.apply(arg))  
+                    return cont(obj.apply(arg))
             return lambda env,c:tuk(op,(env,lambda v1:get_args(arg,env,lambda v2:app(v1,v2,c))))
         elif sexp==Sym('call/cc'):
             return lambda env,c:tuk(c,(BlkCwcc9(env),))
@@ -172,6 +189,7 @@ def buildExp9(sexp):
             return lambda env,c:tuk(c,(sexp,))
     return build(sexp)
 def eval9(sexp,env):
+    #print "eval",sexp
     t=[0]
     def ret(val):
         t[0] = val

@@ -104,7 +104,7 @@ class Par(tuple):
     def map(self,pred):
         return Par.cons(pred(self.car),self.cdr.map(pred) if self.cdr else None)
 ##    def fold(self,pred):
-##        return 
+##        return
     def toPyList(self):
         #assert listp(self)
         pair = self
@@ -136,7 +136,7 @@ class Env:
         return str((self.var,self.bas))
     def define(self,sym,val):
         if sym in self.var:
-            raise Exception()
+            raise Exception("I has '%s' already."%sym)
         self.var[sym] = val;
     def lookup(self,sym):
         if sym in self.var:
@@ -164,23 +164,23 @@ class Prc:
             return self.pred(arg)
         else:
             raise NotImplementedError
-class Lmd(Prc):
-    def __init__(self,lmd,env):
-        self.lmd = lmd
-        self.arg = lmd.cdr.car
-        self.bdy = lmd.cdr.cdr#!!!
-        self.env = env
-    @staticmethod
-    def make(arg,bdy,env):
-        return 
-    def __repr__(self):
-        return str(('LAMBDA',self.lmd,'env'))
-    def apply(self,arg):#move the method to a func?
-        #print "body>",self.bdy
-        rt = self.env.extend(self.arg,arg)#entend env here!!!
-        return self.bdy.map(lambda x:eval(x,rt)).toPyList()[-1]
-        #fold-left
-        #return eval(self.bdy,self.env.extend(self.arg,arg))  
+##class Lmd(Prc):
+##    def __init__(self,lmd,env):
+##        self.lmd = lmd
+##        self.arg = lmd.cdr.car
+##        self.bdy = lmd.cdr.cdr#!!!
+##        self.env = env
+##    @staticmethod
+##    def make(arg,bdy,env):
+##        return
+##    def __repr__(self):
+##        return str(('LAMBDA',self.lmd,'env'))
+##    def apply(self,arg):#move the method to a func?
+##        #print "body>",self.bdy
+##        rt = self.env.extend(self.arg,arg)#entend env here!!!
+##        return self.bdy.map(lambda x:eval(x,rt)).toPyList()[-1]
+##        #fold-left
+##        #return eval(self.bdy,self.env.extend(self.arg,arg))
 #########################yacc####################
 class Reader:
     pass
@@ -188,7 +188,7 @@ class SyxErr(Exception):
     pass
 class Eof:
     pass
-def read(text):
+def peekSexp(text,start=0):
     def sexp(s,pos):
         #print s[pos:]
         tag,end = peekToken(s,pos)
@@ -217,7 +217,7 @@ def read(text):
         if not tag:
             return "$",-1
         if tag[0]=='wht':
-            return srst(s,end)        
+            return srst(s,end)
         elif tag[0]=='rpr':
             return nil,end
         elif tag==('sym','.'):
@@ -228,7 +228,7 @@ def read(text):
                 return "syx err",-1
             exp2,end2 = srst(s,end)
             if end2==-1:
-                return "syx err",-1        
+                return "syx err",-1
             return Par((exp,exp2)),end2
     def sdot(s,pos):
         exp,end = sexp(s,pos)
@@ -240,8 +240,8 @@ def read(text):
         if not tag2[0]=='rpr':
             raise SyxErr("I need ')' please!")
         return exp,end2
-    return sexp(text,0)
-
+    return sexp(text,start)
+read = peekSexp
 
 def build(*arg,**kw):
     return lambda f:f(*arg,**kw)
