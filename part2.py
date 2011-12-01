@@ -48,14 +48,15 @@ class ApyC:
     pass
 class ApyCT:
     pass
-class PyFunc(Prc):
+class PyFun(Prc):
     def __init__(self,func):
         self.func = func
     def __call__(self,*arg):
         return self.func(*arg)
     def apply(self,arg):
         assert pairp(arg) or nullp(arg)
-        return self.func(sexpToPyList(arg))
+        #print arg,(arg.toPyList() if arg else [])
+        return apply(self.func,(arg.toPyList() if arg else []))
 class BlkLmd9(Prc):
     def __init__(self,arg,blk,env):
         self.arg = arg

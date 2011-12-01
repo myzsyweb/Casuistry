@@ -1,3 +1,4 @@
+#!python27
 import sys
 import gc
 import getopt

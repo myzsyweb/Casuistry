@@ -1,13 +1,4 @@
 #!python27
-if 0:
-    import sys
-    import gc
-    sys.setrecursionlimit(2**15-1)
-    gc.disable()
-else:
-    import sys
-    import gc
-    sys.setrecursionlimit(500)
 ##############info#######################
 """
 @author ee.zsy
@@ -105,8 +96,6 @@ class Par(tuple):
         return "(%s . %s)"%(self.car,self.cdr)
     def map(self,pred):
         return Par.cons(pred(self.car),self.cdr.map(pred) if self.cdr else None)
-##    def fold(self,pred):
-##        return
     def toPyList(self):
         #assert listp(self)
         pair = self
@@ -235,4 +224,5 @@ read = peekSexp
 def check(ture):
     if not ture:
         raise Exception()
+    return True
 

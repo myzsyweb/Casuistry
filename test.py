@@ -3,6 +3,8 @@ import unittest
 class Test(unittest.TestCase):
     def setUp(self):
         self.s = Scm()
+        import sys
+        sys.setrecursionlimit(200)
     def testBase(self):
         self.assertEqual(self.s.sh("1"), 1)
         self.assertEqual(self.s.sh("(+ 1 1)"), 2)
@@ -104,7 +106,7 @@ class Test(unittest.TestCase):
         s.sh("""(::begin (define (z x) x) (define (d x) x)(define y 1) y)""")
         self.assertEqual(s.sh("""(d 4)"""), 4)
     def testOutside(self):
-        self.s.load("test.scm")
+        self.s.load("test.scm",self.s.env())
         
         
 print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"

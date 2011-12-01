@@ -1,18 +1,8 @@
 from part2 import *
-##toplevel9 = None
-##def inEnv():
-##    return toplevel
+import os
 #print "####part2################"
 class TypErr(Exception):
     pass
-##def peekSexp(code):
-##    return read(code)
-##def read1(code):
-##    return read(code)[0]
-##class Typ:
-##    @staticmethod
-##    def pairp(obj):
-##        return pairp(obj)
 def pprint(sexp):
     return sexp
 def load(filename,env):
@@ -26,7 +16,7 @@ class Scm:
         return eval9(read(code)[0],self._env)
     @staticmethod    
     def load(filename,env):
-        with open(filename) as f:#path.file
+        with open(os.path.abspath(filename)) as f:
             return Scm.eval(Scm.read("(begin %s)"%f.read()),topenvrn)  
     def env(self):
         return self._env
@@ -52,28 +42,22 @@ def block(f):
 def globalMacro():
     def defmacro(code):#not use outside,dut to scope
         sexp = Scm.read(code)
-        #print ">",Scm.read(code)
         assert sexp.car=='defmarco'
         name = sexp.cdr.car
         marco_rule = cons('lambda',sexp.cdr.cdr)
-        #trans = Scm.eval(marco_rule,Scm().env())
         def expend(sexp):
             trans = Scm.eval(marco_rule,topenvrn)#here?
             #print topenvrn.var.keys()
             #print 'list' in topenvrn.var.keys()
             #print sexp
             expended_code = trans.apply(sexp.cdr)
-            #print ">>>>>>>",expended_code
             return buildExp9(expended_code)
         topmacro[name] = expend
-    with open("initsyx.scm") as f:
+    with open(os.path.abspath("initsyx.scm")) as f:
         code = f.read()
         #print "file>",code
         start = 0
         while 1:
-            #print "file>1",code
-            #print peekSexp(code,start)
-            #print ">>>>>>>>>",code[start:]
             t,end = peekSexp(code,start)
             if end==-1:
                 break
@@ -89,113 +73,161 @@ def globalMacro():
     
 @block
 def _():
-    def build(*arg,**kw):
-            return lambda f:f(*arg,**kw)
-    def bldr(f):
-            return f()
-    def genv():
-            return topenvrn
+
     def check(ture):
-            if not ture:
-                    raise Exception()
+        if not ture:
+            raise Err()
+        return True
     #topenvrn = Env()
-    def defun(name,env=None):
+    def defun(name,env=None):#this one is better
             env = env if env else topenvrn
             return lambda f:env.define(Sym(name),Prc(f))
-    def bindPyFunc(env,name,proc):
-            return env.define(name,Prc(lambda arg:apply(proc,arg.toPyList())))
+    def define(name,value,env=None):
+            env = env if env else topenvrn
+            return env.define(Sym(name),value)
+    def bindPyFun(name,func,env=None):
+	    env = env if env else topenvrn
+	    return env.define(name,Prc(lambda arg:apply(func,arg.toPyList())))
+    def chanp(pred):
+        def _(*lst):
+            assert len(lst)>=2
+            a = lst[0]
+            for b in lst[1:]:
+                if not pred(a,b):
+                    return False
+                a = b
+            return True
+        return _
+    def chanpp(pred):#this one is better than chanp
+        def _(pair):
+            a,b = pair
+            while 1:
+                b,c = b
+                if not pred(a,b):
+                    return False
+                if nullp(c):
+                    return True
+            raise Exception()
+        return _
+    
+    bindFun = bindPyFun
 
-    @build(topenvrn)
-    def defineToplevel(env):
-            @defun("display",env)
+    @block
+    def base():
+            @defun("display")
             def _(arg):
                     check(pairp(arg))
                     print arg.car
-                    return None
-            @defun("newline",env)
+            @defun("newline")
             def _(arg):
                     print ;
-                    return None
             @defun("error")
             def _(arg):
-                    raise Exception("ERR ",arg.car)
-                    return None
-            @defun("apply1",env)#with cont
-            def _(arg):
-                    check(isa(arg.car,Prc))
-                    return arg.car.apply(arg.cdr.car)
-            @defun("cons",env)
-            def _(arg):
-                    check(pairp(arg))
-                    check(pairp(arg.cdr))
-                    check(nullp(arg.cdr.cdr))
-                    return Par.cons(arg.car,arg.cdr.car)
-            @defun("car",env)
-            def _(arg):
-                    check(pairp(arg))
-                    check(pairp(arg.car))
-                    check(nullp(arg.cdr))
-                    return arg.car.car
-            @defun("cdr",env)
-            def _(arg):
-                    return arg.car.cdr
-            @defun("<",env)
-            def _(x):
-                    return x.car<x.cdr.car
-            @defun(">",env)
-            def _(x):
-                    return x.car>x.cdr.car
-            @defun("=",env)
-            def _(x):
-                    check(numberp(x.car))
-                    check(numberp(x.cdr.car))
-                    return x.car==x.cdr.car
-            @defun("eq?",env)
-            def _(x):
-                    return x.car==x.cdr.car#use 'is' later
-            @defun("eqv?",env)
-            def _(x):
-                    return x.car==x.cdr.car#use 'is' for pair later
-            @defun("equal?",env)
-            def _(x):
-                    return x.car==x.cdr.car
-##            @defun("-",env)
+                    raise Err("ERR ",arg.car)
+            bindPyFun("null?",nullp)
+            define("apply",BlkApp9())
+
+    @block
+    def pair():
+            bindPyFun("pair?",pairp)
+            bindPyFun("cons",cons)
+            bindPyFun("car",car)
+            bindPyFun("cdr",cdr)
+
+    @block
+    def equal():
+            @defun("eq?")
+            @chanpp
+            def _(x,y):
+                    return x==y#use 'is' later
+            @defun("eqv?")
+            @chanpp
+            def _(x,y):
+                    return x==y#use 'is' for pair later
+            @defun("equal?")
+            @chanpp
+            def _(x,y):
+                    return x==y
+
+        
+    @block
+    def math():
+        define("+nan.0",float('nan'))
+        bindPyFun("number?",numberp)
+        define("+",PyFun(lambda *lst:reduce(lambda x,y:x+y,lst,0)))
+        define("-",PyFun(lambda *lst:reduce(lambda x,y:x-y,lst,)))
+        define("*",PyFun(lambda *lst:reduce(lambda x,y:x*y,lst,1)))
+        define("/",PyFun(lambda *lst:reduce(lambda x,y:x/y,lst)))
+        bindPyFun("=",chanp(lambda a,b:a==b))
+        bindPyFun(">",chanp(lambda a,b:a>b))
+        bindPyFun("<",chanp(lambda a,b:a<b))
+        bindPyFun(">=",chanp(lambda a,b:a>=b))
+        bindPyFun("<=",chanp(lambda a,b:a<=b))
+##        @defun("<")
+##        def _(x):
+##            return x.car<x.cdr.car
+##        @defun(">")
+##        def _(x):
+##            return x.car>x.cdr.car
+##        @defun("=")
+##        def _(x):
+##            check(numberp(x.car))
+##            check(numberp(x.cdr.car))
+##            return x.car==x.cdr.car
+
+    @block
+    def math2():
+        import math
+        dct={
+            'abs':abs,
+            'quotient':lambda a,b:int(a / b),
+            'remainder':lambda a,b:a-(b*int(a/b)),
+            'modulo':lambda a,b:a % b,
+            'floor':math.floor,
+            'ceiling':math.ceil,
+            'truncate':math.trunc,
+            'round':round,
+            'exp':math.exp,
+            'log':math.log,
+            'sin':math.sin,
+            'cos':math.cos,
+            'tan':math.tan,
+            'asin':math.asin,
+            'acos':math.acos,
+            'atan':math.atan,
+            'sqrt':math.sqrt,
+            }
+        for k,v in dct.items():
+            bindPyFun(k,v)
+
+    @block
+    def logic():
+        define("not",Prc(lambda arg:not arg.car))
+        define("#t",True)
+        define("#f",False)#use lex later
+
+    
+    @block
+    def init():
+        Scm.load("initlib.scm",topenvrn)     
+
+    @block
+    def string():
+        define("string-append",PyFun(lambda *lst:reduce(lambda x,y:check(isa(x,str)) and check(isa(y,str)) and x+y,lst,'')))    
+##            @defun("::string-append",topenvrn)
 ##            def _(x):
-##                    return x.car-x.cdr.car
-    topenvrn.define("+",Prc(lambda arg:reduce(lambda x,y:x+y,arg.toPyList() if arg else [],0)))
-    topenvrn.define("-",Prc(lambda arg:reduce(lambda x,y:x-y,arg.toPyList())))
-    topenvrn.define("*",Prc(lambda arg:reduce(lambda x,y:x*y,arg.toPyList()if arg else [],1)))
-    topenvrn.define("/",Prc(lambda arg:reduce(lambda x,y:x/y,arg.toPyList())))
-    topenvrn.define("pair?",Prc(lambda arg:pairp(arg.car)))
-    bindPyFunc(topenvrn,"null?",nullp)
-    bindPyFunc(topenvrn,"number?",numberp)
-
-    topenvrn.define("not",Prc(lambda arg:not arg.car))
-    topenvrn.define("apply",BlkApp9())
-    eval9(Scm.read("""1"""),topenvrn)
-    with open("initlib.scm") as f:#local path
-        libCode = "(begin %s)"%f.read()
-        eval9(Scm.read(libCode),topenvrn)       
-
-    topenvrn.define("#t",True)
-    topenvrn.define("#f",False)#use lex later
-
-    topenvrn.define("+nan.0",float('nan'))
-
-    @bldr
-    def defineString():
-            @defun("::string-append",topenvrn)
-            def _(x):
-                    check(isa(x.car,str))
-                    check(isa(x.cdr.car,str))
-                    return x.car+x.cdr.car
-            Scm.eval(Scm.read("""(define (string-append . x) (fold-left ::string-append "" x))"""),topenvrn)
-    @bldr
-    def defineType():
+##                    check(isa(x.car,str))
+##                    check(isa(x.cdr.car,str))
+##                    return x.car+x.cdr.car
+##            Scm.eval(Scm.read("""(define (string-append . x) (fold-left ::string-append "" x))"""),topenvrn)
+    
+    @block
+    def typeToType():
             @defun("number->string",topenvrn)
             def _(x):
                     check(numberp(x.car))
                     return str(x.car)
+
 #topenvrn.define()
 #print Scm().sh("1")
 ##print eval9(read("""((lambda ()

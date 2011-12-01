@@ -1,2 +1,2 @@
-(define (assert true)
-  (if (not ture) (error "fail") #f))
+(define (assert true . msg)
+  (if (not ture) (error msg) #f))
