@@ -13,12 +13,21 @@ class TypErr(Exception):
 ##    @staticmethod
 ##    def pairp(obj):
 ##        return pairp(obj)
+def pprint(sexp):
+    return sexp
+def load(filename,env):
+    with open(filename) as f:#path.file
+        return Scm.eval(Scm.read("(begin %s)"%f.read()),topenvrn)      
 class Scm:
     def __init__(self,toplevel=None):
         toplevel=toplevel if toplevel else topenvrn
         self._env = toplevel.extend()
     def sh(self,code):
         return eval9(read(code)[0],self._env)
+    @staticmethod    
+    def load(filename,env):
+        with open(filename) as f:#path.file
+            return Scm.eval(Scm.read("(begin %s)"%f.read()),topenvrn)  
     def env(self):
         return self._env
     def repl(self):
@@ -57,40 +66,26 @@ def globalMacro():
             #print ">>>>>>>",expended_code
             return buildExp9(expended_code)
         topmacro[name] = expend
+    with open("initsyx.scm") as f:
+        code = f.read()
+        #print "file>",code
+        start = 0
+        while 1:
+            #print "file>1",code
+            #print peekSexp(code,start)
+            #print ">>>>>>>>>",code[start:]
+            t,end = peekSexp(code,start)
+            if end==-1:
+                break
+            defmacro(code[start:end])
+            start = end
     defmacro("""(defmarco define lst
                  (if (pair? (car lst))
                      (cons '::define (cons (car (car lst)) (cons (cons 'lambda (cons (cdr (car lst)) (cdr lst))) '())))
                      (cons '::define lst))))""")
+    #defvar
     defmacro("""(defmarco begin lst
                     (cons '::begin lst))""")
-
-    defmacro("""(defmarco cond (h . t)
-                  (if (eq? (car h) 'else)
-                      (if (null? t)
-                          (cons 'begin (cdr h))
-                          (error "ELSE isn't last"))
-                      (list 'if (car h)
-                            (cons 'begin (cdr h))
-                            (cons 'cond t))))""")
-    #why not use define?
-    defmacro("""(defmarco case lst 
-              (define expand-rest-case (lambda (lst)
-              (if (null? lst)
-                  (list 'quote '())
-                  (if (eq? (car (car lst)) 'else)
-                      (if (null? (cdr lst))
-                          (cons 'begin (cdr (car lst)))
-                          (error "ELSE isn't last"))
-                      (list 'if (list 'member ':: (list 'quote (car (car lst))))
-                            (cons 'begin (cdr (car lst)))
-                            (expand-rest-case (cdr lst)))))))
-            (list (list 'lambda '(::) (expand-rest-case (cdr lst)))(car lst)))""")
-    defmacro("""(defmarco let lst
-            (apply 
-             (lambda (name bind . stmt)
-               (list (list 'lambda (list)(cons 'define (cons (cons name (map car bind)) stmt))
-                           (cons name (map cadr bind)))))
-             (if (pair? (car lst)) (cons ':: lst) lst)))""")
     
 @block
 def _():
@@ -120,6 +115,10 @@ def _():
             @defun("newline",env)
             def _(arg):
                     print ;
+                    return None
+            @defun("error")
+            def _(arg):
+                    raise Exception("ERR ",arg.car)
                     return None
             @defun("apply1",env)#with cont
             def _(arg):
@@ -170,45 +169,27 @@ def _():
     topenvrn.define("pair?",Prc(lambda arg:pairp(arg.car)))
     bindPyFunc(topenvrn,"null?",nullp)
     bindPyFunc(topenvrn,"number?",numberp)
+
     topenvrn.define("not",Prc(lambda arg:not arg.car))
     topenvrn.define("apply",BlkApp9())
     eval9(Scm.read("""1"""),topenvrn)
-    if 0:
-        eval9(Scm.read("""(begin
-            (define list (lambda x x))
-            (define cdar (lambda (x) (cdr (car x))))
-            (define cadr (lambda (x) (car (cdr x))))
-            )"""),topenvrn)
-    with open("initlib.scm") as f:
-        #libCode = "(::begin %s)"%f.read()
-        code = f.read()
-        s = 0
-        while 1:
-            t,s = peekSexp(code,s)
-            if s==-1:
-                break
-            eval9(t,topenvrn)  
-            print ">>",t
-        #eval9(Scm.read(libCode),topenvrn)       
+    with open("initlib.scm") as f:#local path
+        libCode = "(begin %s)"%f.read()
+        eval9(Scm.read(libCode),topenvrn)       
 
     topenvrn.define("#t",True)
     topenvrn.define("#f",False)#use lex later
 
-##    Scm.eval(Scm.read("""
-##    (define (append . x)
-##      (define (append a b)
-##            (if (null? a) b
-##                    (cons (car a) (append (cdr a) b))))
-##      (fold-left append '() x))
-##    """),topenvrn)
-##    @bldr
-##    def defineString():
-##            @defun("::string-append",topenvrn)
-##            def _(x):
-##                    check(isa(x.car,str))
-##                    check(isa(x.cdr.car,str))
-##                    return x.car+x.cdr.car
-##            eval(read("""(define (string-append . x) (fold-left ::string-append "" x))""")[0],topenvrn)
+    topenvrn.define("+nan.0",float('nan'))
+
+    @bldr
+    def defineString():
+            @defun("::string-append",topenvrn)
+            def _(x):
+                    check(isa(x.car,str))
+                    check(isa(x.cdr.car,str))
+                    return x.car+x.cdr.car
+            Scm.eval(Scm.read("""(define (string-append . x) (fold-left ::string-append "" x))"""),topenvrn)
     @bldr
     def defineType():
             @defun("number->string",topenvrn)

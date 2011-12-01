@@ -101,6 +101,8 @@ class Par(tuple):
     @staticmethod
     def cons(car,cdr):
         return Par((car,cdr))
+    def __repr__(self):
+        return "(%s . %s)"%(self.car,self.cdr)
     def map(self,pred):
         return Par.cons(pred(self.car),self.cdr.map(pred) if self.cdr else None)
 ##    def fold(self,pred):
@@ -127,6 +129,8 @@ class Num(Fraction):
     def __repr__(self):
         return str(self)
 class Bol:
+    pass
+class SymMap(dict):
     pass
 class Env:
     def __init__(self,var=None,bas=None):
@@ -164,24 +168,6 @@ class Prc:
             return self.pred(arg)
         else:
             raise NotImplementedError
-##class Lmd(Prc):
-##    def __init__(self,lmd,env):
-##        self.lmd = lmd
-##        self.arg = lmd.cdr.car
-##        self.bdy = lmd.cdr.cdr#!!!
-##        self.env = env
-##    @staticmethod
-##    def make(arg,bdy,env):
-##        return
-##    def __repr__(self):
-##        return str(('LAMBDA',self.lmd,'env'))
-##    def apply(self,arg):#move the method to a func?
-##        #print "body>",self.bdy
-##        rt = self.env.extend(self.arg,arg)#entend env here!!!
-##        return self.bdy.map(lambda x:eval(x,rt)).toPyList()[-1]
-##        #fold-left
-##        #return eval(self.bdy,self.env.extend(self.arg,arg))
-#########################yacc####################
 class Reader:
     pass
 class SyxErr(Exception):
@@ -212,6 +198,7 @@ def peekSexp(text,start=0):
             if end==-1:
                 return "syx err",-1
             return (exp),end
+        raise SyxErr(tag,end,s[pos:end])
     def srst(s,pos):
         tag,end = peekToken(s,pos)
         if not tag:
@@ -230,6 +217,7 @@ def peekSexp(text,start=0):
             if end2==-1:
                 return "syx err",-1
             return Par((exp,exp2)),end2
+        raise Exception()
     def sdot(s,pos):
         exp,end = sexp(s,pos)
         if end==-1:
@@ -240,15 +228,10 @@ def peekSexp(text,start=0):
         if not tag2[0]=='rpr':
             raise SyxErr("I need ')' please!")
         return exp,end2
+        raise Exception()
     return sexp(text,start)
 read = peekSexp
 
-def build(*arg,**kw):
-    return lambda f:f(*arg,**kw)
-def bldr(f):
-    return f()
-def genv():
-    return toplevel
 def check(ture):
     if not ture:
         raise Exception()
