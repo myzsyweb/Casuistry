@@ -16,7 +16,22 @@ class Test(unittest.TestCase):
         
     def testRead(self):
         self.assertEqual(len(self.s.read("(+ 1 4)").toPyList()),3)
-    
+        self.assertEqual(len(self.s.read("'`',a").toPyList()),2)
+        self.assertEqual(len(self.s.read("`(12 2 5)").toPyList()),2)
+        self.assertEqual(len(self.s.read("`(,12 ,2 ,5)").toPyList()),2)
+        self.assertEqual(len(self.s.read("`(12 ,@(+ 2 a) 5)").toPyList()),2)
+        self.assertEqual(len(self.s.read("""
+                                        (
+                                        1;hello
+                                        2;world
+                                        3)
+                                        """).toPyList()),3)
+        self.assertEqual(self.s.read("`(,+ ,a 1)"),
+            self.s.read("(quasiquote ((unquote +) (unquote a) 1))"))
+        self.assertEqual(self.s.read("`(12 ,@(+ 2 a) 5)"),
+            self.s.read("(quasiquote (12 (unquote-splicing (+ 2 a)) 5 ))"))
+
+
     def testType(self):
         self.assertTrue(self.s.sh("(pair? (quote (+ 1 2)))"))
         

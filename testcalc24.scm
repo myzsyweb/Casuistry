@@ -1,3 +1,4 @@
+;calc24
 (define (calc24 a b c d)
   (define (reverse lst)
   (if (null? lst) '()

@@ -227,7 +227,10 @@ def _():
             def _(x):
                     check(numberp(x.car))
                     return str(x.car)
-
+					
+@block
+def topExtend():
+	pass
 #topenvrn.define()
 #print Scm().sh("1")
 ##print eval9(read("""((lambda ()

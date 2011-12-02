@@ -28,6 +28,7 @@ def main():
         if o == "-g":
             gc.disable()
     if args:
+        sys.setrecursionlimit(2**15-1)
         print Scm.load(args[0],scm.env())
     else:
         print repl()

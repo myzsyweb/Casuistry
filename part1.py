@@ -27,16 +27,20 @@
 
 def isa(obj,typ):
     return isinstance(obj,typ)
-#######################lex##########################
+#######################lex#########################
+#|(?P<cmt>;[^\n\r]*[\n\t])
 import re
 pattern = r'''
  (?P<lpr>\()
 |(?P<rpr>\))
 |(?P<qte>\')
+|(?P<qqt>`)
+|(?P<uqs>,@)
+|(?P<uqt>,)
 |(?P<num>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)
 |(?P<str>\"(\\.|[^"])*\")
+|(?P<wht>([ \t\n\r]+)|(;.*?[\n\r]))
 |(?P<sym>[^ \)\(\t\n\r]+)
-|(?P<wht>[ \t\n\r]+)
 '''
 token = re.compile(pattern,re.S|re.X)
 def peekToken(text,start=0):
@@ -105,7 +109,20 @@ class Par(tuple):
             #pyList[-1]=pyList[-1].toPyList() if listp(pyList[-1]) else pyList[-1]
             pair = pair.cdr
         return pyList
-    #def __iter__
+##    def iter(self):
+##        class iter:
+##            def __init__(self,pair):
+##                self.pair = pair
+##            def next(self):
+##                if nullp(self.pair):
+##                    raise StopIteration
+####                elif not pairp(self.pair):
+####                    raise Err('not a list')
+##                item = self.pair.car
+##                self.pair = self.pair.cdr
+##                return item
+##        return iter(self)
+    #def pprint
 class Sym(str):
     pass
 class Str(str):
@@ -157,6 +174,8 @@ class Prc:
             return self.pred(arg)
         else:
             raise NotImplementedError
+def procedurep(obj):
+    return isa(obj,Prc)
 class Reader:
     pass
 class SyxErr(Exception):
@@ -182,6 +201,12 @@ def peekSexp(text,start=0):
             if end==-1:
                 return "syx err",-1
             return Par((Sym("quote"),Par.cons(exp,None))),end
+        elif tag[0]in ('qqt','uqt','uqs'):
+            sym={'qqt':'quasiquote','uqt':'unquote','uqs':'unquote-splicing'}
+            exp,end = sexp(s,end)
+            if end==-1:
+                return "syx err",-1
+            return Par((Sym(sym[tag[0]]),Par.cons(exp,None))),end
         elif tag[0]=='lpr':
             exp,end = srst(s,end)
             if end==-1:
