@@ -91,4 +91,7 @@
 (apply (lambda x x) '(1 2 3))
 (apply quasiquwteex '((1 2 3)))
 (display (apply quasiquwteex '((a 2 3))))
+(display "should be")
+(display '(cons (quwte a) (cons 2 (cons 3 (quwte ())))))
+(newline)
 (apply quasiquwteex '(((unquwte a) 2 3)))
