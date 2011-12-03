@@ -1,18 +1,19 @@
+#+OPTIONS:     H:2 num:t toc:t \n:t @:t ::t |:t ^:t -:nil f:t TeX:t ...
 一个简陋的Python制Scheme实现
 
 * 施工中
-更多的测试代码
-补完词法
-实现语句宏
-改善错误提示
-代码生成
+ + 更多的测试代码
+ + 补完词法
+ + 实现语句宏
+ + 改善错误提示
+ + 代码生成
 
 * 说明
 一个简单的Python制Scheme实现
- * 名称 Casuistry Scheme
- * 用途 娱乐
- * 作者 ee.zsy
- * 特性 坑
+ + 名称 :: Casuistry Scheme
+ + 用途 :: 娱乐
+ + 作者 :: ee.zsy
+ + 特性 :: 坑
 
 
 * Changelog
