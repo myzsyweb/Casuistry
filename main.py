@@ -2,7 +2,7 @@
 import sys
 import gc
 import getopt
-from part3 import Scm,defmacro
+from part3 import Scm
 
 __all__ = ['Scm']
 
@@ -28,11 +28,10 @@ def main():
         if o == "-g":
             gc.disable()
     if args:
-        sys.setrecursionlimit(2**15-1)
         print Scm.load(args[0],scm.env())
     else:
         sys.setrecursionlimit(2**15-1)
-        defmacro(open("quasiquote.scm").read())
+        #defmacro(open("quasiquote.scm").read())
         print repl()
 if __name__ == "__main__":
     main()

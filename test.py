@@ -132,7 +132,9 @@ class Test(unittest.TestCase):
         self.assertEqual(s.sh("""(or #f #f #f)"""), False)
         self.assertEqual(s.sh("""(or (member 'b '(a b c))(/ 3 0))"""), s.read("""(b c)"""))
 
-
+    def testQuasiquote(self):
+        pass
+        #self.assertEqual(s.sh("""`(a 1 ,(+ 1 1) ,@(list 1 2))"""), s.read("""'(a 1 2 1 2)"""))
 
         
     def testOutside(self):

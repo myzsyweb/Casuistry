@@ -1,3 +1,4 @@
+(display "hello")
 (define and1 
   (lambda lst 
     (if (null? lst) #t
@@ -29,7 +30,7 @@
 ;; Subsequently modified to handle vectors: D. Souflis
 (define quasiquwteex 
   (lambda lst
-    (display lst)
+    ;(display lst)
     (define xquasiquwte
       (lambda (l)
         (define (mcons f l r)
@@ -82,10 +83,12 @@
                                          (foo level (cdr form)))))))))
         (foo 0 (car (cdr l)))))              
     
-    (xquasiquwte (cons 'quasiquwte lst)))
+     (xquasiquwte (cons 'quasiquwte lst)))
   )
 (display (apply quasiquwteex (cdr '(quasiquwte ((unquwte +) 1 (unquwte a))))))
 (apply quasiquwteex (cdr '(quasiquwte ((unquwte +) 1 (unquwte a)))))
 (apply quasiquwteex '(((unquwte +) 1 (unquwte a))))
 (apply (lambda x x) '(1 2 3))
 (apply quasiquwteex '((1 2 3)))
+(display (apply quasiquwteex '((a 2 3))))
+(apply quasiquwteex '(((unquwte a) 2 3)))

@@ -51,6 +51,7 @@ def globalMacro():
             #print 'list' in topenvrn.var.keys()
             #print sexp
             expended_code = trans.apply(sexp.cdr)
+            #print expended_code if pairp(expended_code) and expended_code.car=='cons' else None
             return buildExp9(expended_code)
         topmacro[name] = expend
     with open(os.path.abspath("initsyx.scm")) as f:
