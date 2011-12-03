@@ -55,6 +55,7 @@ class Test(unittest.TestCase):
         self.assertEqual(self.s.sh("""(begin (display 1) (display 2) 3)"""), 3)
         self.assertEqual(self.s.sh("""(let loop ((x 10))(if (< x 0) 0 (+ x (loop (- x 1)))))"""), 55)
         self.assertEqual(self.s.sh("""(cond((= 1 2) 3)((= 4 5) 6)(else 7))"""), 7)
+        self.assertEqual(self.s.sh("""(begin (cond((= 1 2) 3)((= 4 5) 6)) 7)"""), 7)
         self.assertEqual(self.s.sh("""(case (+ 1 1)((1) 1)((2) 2))"""), 2)
         
     def testTodo(self):
@@ -120,8 +121,24 @@ class Test(unittest.TestCase):
         self.assertEqual(s.sh("""x"""), 1)
         s.sh("""(::begin (define (z x) x) (define (d x) x)(define y 1) y)""")
         self.assertEqual(s.sh("""(d 4)"""), 4)
+
+    def testCtrl(self):
+        self.assertEqual(s.sh("""(and (= 2 2) (> 2 1))"""), True)
+        self.assertEqual(s.sh("""(and (= 2 2) (< 2 1))"""), False)
+        self.assertEqual(s.sh("""(and 1 2 'c '(f g))"""), s.sh("""'(f g)"""))
+        self.assertEqual(s.sh("""(and)"""), True)
+        self.assertEqual(s.sh("""(or (= 2 2) (> 2 1))"""), True)
+        self.assertEqual(s.sh("""(or (= 2 2) (< 2 1))"""), True)
+        self.assertEqual(s.sh("""(or #f #f #f)"""), False)
+        self.assertEqual(s.sh("""(or (member 'b '(a b c))(/ 3 0))"""), s.read("""(b c)"""))
+
+
+
+        
     def testOutside(self):
         self.s.load("test.scm",self.s.env())
+
+    
         
         
 print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"

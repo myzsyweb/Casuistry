@@ -24,7 +24,6 @@
 #tail-rec
 #call/cc
 #export api
-
 def isa(obj,typ):
     return isinstance(obj,typ)
 #######################lex#########################
@@ -157,6 +156,7 @@ class Env:
             raise Exception("I can't understand what '%s' means?"%sym)
     def extend(self,arg=None,val=None):
         #print "extend>",arg,val
+        # "extend>",arg,val.car if val else None
         var = {}
         while pairp(arg):
             var[car(arg)]=car(val)

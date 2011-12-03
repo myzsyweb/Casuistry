@@ -70,7 +70,9 @@ def globalMacro():
     #defvar
     defmacro("""(defmarco begin lst
                     (cons '::begin lst))""")
-    
+    defmacro(open("quasiquote.scm").read())
+    return defmacro
+defmacro = globalMacro
 @block
 def _():
 
@@ -125,6 +127,7 @@ def _():
             def _(arg):
                     raise Err("ERR ",arg.car)
             bindPyFun("null?",nullp)
+            bindPyFun("procedure?",procedurep)
             define("apply",BlkApp9())
 
     @block
@@ -213,6 +216,7 @@ def _():
 
     @block
     def string():
+        define("string?",Prc(lambda arg:isa(arg.car,str)))
         define("string-append",PyFun(lambda *lst:reduce(lambda x,y:check(isa(x,str)) and check(isa(y,str)) and x+y,lst,'')))    
 ##            @defun("::string-append",topenvrn)
 ##            def _(x):
@@ -227,6 +231,9 @@ def _():
             def _(x):
                     check(numberp(x.car))
                     return str(x.car)
+    @block
+    def vector():
+        define("vector",Prc(lambda arg:arg.toPyList() if arg else []))
 					
 @block
 def topExtend():

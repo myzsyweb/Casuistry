@@ -1,7 +1,7 @@
 #tail-call
 from part1 import *
 import sys
-sys.setrecursionlimit(100)
+#sys.setrecursionlimit(100)
 def pyListToSexp(lst):
     return reduce(lambda s,i:cons(i,s),reversed(lst),nil)
 def pyListToPair(lst):
@@ -71,7 +71,7 @@ class BlkLmd9(Prc):
         rt = self.env.extend(self.arg,arg)
         def quote(arg):
             return cons('quote',cons(arg,nil))
-        return eval9(cons(self,arg.map(quote)),rt)
+        return eval9(cons(self,arg and arg.map(quote)),rt)
     def apply9(self,arg,cont):
         rt = self.env.extend(self.arg,arg)
         #print "????",self.bdy(rt,cont)
