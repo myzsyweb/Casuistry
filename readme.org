@@ -1,4 +1,3 @@
-#+OPTIONS:     H:2 num:t toc:t \n:t @:t ::t |:t ^:t -:nil f:t TeX:t ...
 一个简陋的Python制Scheme实现
 
 * 施工中
@@ -105,3 +104,4 @@
  + [[http://www.biwascheme.org/][biwascheme]]
  + [[https://hkn.eecs.berkeley.edu/~dyoo/python/pyscheme/][pyscheme]]
  + psyche
+#+OPTIONS:     H:2 num:t toc:t \n:t @:t ::t |:t ^:t -:nil f:t TeX:t
