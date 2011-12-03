@@ -1,6 +1,6 @@
-一个简单的Python制Scheme实现，施工中
+一个简陋的Python制Scheme实现
 
-* TODO
+* 施工中
 更多的测试代码
 补完词法
 实现语句宏
@@ -9,15 +9,10 @@
 
 * 说明
 一个简单的Python制Scheme实现
-** 名称
-Casuistry Scheme
-** 用途
-娱乐
-** 作者
-ee.zsy
-
-* 特性
-坑
+ * 名称 Casuistry Scheme
+ * 用途 娱乐
+ * 作者 ee.zsy
+ * 特性 坑
 
 
 * Changelog
@@ -66,7 +61,7 @@ ee.zsy
  + pypy
  + 持久化和dump
  + 让env成为first-class
-** 优先级更不高的TOGO
+** 优先级更不高的TODO
  + 性能啊
  + 整理代码
  + define-syntax词法作用域或者预处理
@@ -103,8 +98,9 @@ ee.zsy
  + [[http://mitpress.mit.edu/sicp/][SICP]]
  + IEEE 1178-1990
  + R5RS
- + tinyscheme
+ + Lambda Paper
+ + [[http://tinyscheme.sourceforge.net/][tinyscheme]]
  + scm/slib
- + biwascheme
- + pyscheme
+ + [[http://www.biwascheme.org/][biwascheme]]
+ + [[https://hkn.eecs.berkeley.edu/~dyoo/python/pyscheme/][pyscheme]]
  + psyche
