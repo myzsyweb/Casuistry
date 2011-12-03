@@ -148,7 +148,7 @@ def buildExp9(sexp):
             val = build(sexp.cdr.cdr.car)
             return lambda env,c:tuk(val,(env,lambda v:c(env.define(name,v))))
         elif op==Sym('::begin'):
-            bodys = sexp.cdr.map(build)
+            #bodys = sexp.cdr.map(build)
             return seqs(sexp.cdr)
             #return lambda env,c:tuk(val,(env,lambda v:c(env.define(name,v))))
             #return seqs(bodys)

@@ -12,7 +12,7 @@
                  (pair? l)
                  (eq? (car l) 'quote)
                  (eq? (car (cdr l)) (car f)))
-            (if (or (procedure? f) (number? f) (string? f))
+            (if (or (procedure? f) (number? f)); (string? f)
                 f
                 (list 'quote f))
             (if (eqv? l vector)

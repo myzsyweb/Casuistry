@@ -49,7 +49,26 @@ class Test(unittest.TestCase):
         self.assertTrue(self.s.sh("(eqv? 'a 'a)"))
         self.assertTrue(self.s.sh("(equal? '(1 2) '(1 2))"))
         self.assertTrue(self.s.sh("(= 1 1)"))
-        
+    def testEq(self):
+        self.assertTrue(self.s.sh("(eq? 'a 'a) "))
+        self.assertTrue(not self.s.sh("(eq? (list 'a) (list 'a))"))
+        self.assertTrue(self.s.sh("(eq? '() '())"))
+        self.assertTrue(self.s.sh("(eq? car car)"))
+        self.assertTrue(self.s.sh("(let ((x '(a)))(eq? x x))"))
+        self.assertTrue(self.s.sh("(let ((p (lambda (x) x)))(eq? p p))"))
+
+
+    def testEqv(self):
+        self.assertTrue(self.s.sh("(eqv? 'a 'a) "))
+        self.assertTrue(not self.s.sh("(eqv? 'a 'b)"))
+        self.assertTrue(self.s.sh("(eqv? 2 2)"))
+        self.assertTrue(self.s.sh("(eqv? '() '())"))
+        self.assertTrue(self.s.sh("(eqv? 100000000 100000000)"))
+        self.assertTrue(not self.s.sh("(eqv? (cons 1 2) (cons 1 2))"))
+        self.assertTrue(not self.s.sh("(eqv? (lambda () 1)(lambda () 2))"))
+        #self.assertTrue(not self.s.sh("(eqv? #f 'nil)"))
+        self.assertTrue(self.s.sh("(let ((p (lambda (x) x)))(eqv? p p))"))
+
     def testMarco(self):
         self.assertEqual(self.s.sh("""((lambda ()(define (f x) (+ x 1))(f 4)))"""), 5)
         self.assertEqual(self.s.sh("""(begin (display 1) (display 2) 3)"""), 3)
@@ -133,9 +152,8 @@ class Test(unittest.TestCase):
         self.assertEqual(s.sh("""(or (member 'b '(a b c))(/ 3 0))"""), s.read("""(b c)"""))
 
     def testQuasiquote(self):
-        pass
-        #self.assertEqual(s.sh("""`(a 1 ,(+ 1 1) ,@(list 1 2))"""), s.read("""'(a 1 2 1 2)"""))
-
+        self.assertEqual(s.sh("""`(a 1 ,(+ 1 1) ,@(list 1 2))"""), s.sh("""'(a 1 2 1 2)"""))
+        self.assertEqual(s.sh("""((lambda ()(define (f x) (+ x 1))`(1 ,(f 1))))"""), s.sh("""'(1 2)"""))
         
     def testOutside(self):
         self.s.load("test.scm",self.s.env())

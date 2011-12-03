@@ -143,11 +143,11 @@ def _():
             @defun("eq?")
             @chanpp
             def _(x,y):
-                    return x==y#use 'is' later
+                    return (x is y) or (isa(x,str) and isa(y,str) and x==y)#use 'is' later
             @defun("eqv?")
             @chanpp
             def _(x,y):
-                    return x==y#use 'is' for pair later
+                    return (not isa(x,tuple)) and (not isa(x,list)) and x==y#use 'is' for pair later
             @defun("equal?")
             @chanpp
             def _(x,y):
@@ -217,7 +217,7 @@ def _():
 
     @block
     def string():
-        define("string?",Prc(lambda arg:isa(arg.car,str)))
+        define("string?",Prc(lambda arg:isa(arg.car,str) and not isa(arg.car,Sym)))
         define("string-append",PyFun(lambda *lst:reduce(lambda x,y:check(isa(x,str)) and check(isa(y,str)) and x+y,lst,'')))    
 ##            @defun("::string-append",topenvrn)
 ##            def _(x):
