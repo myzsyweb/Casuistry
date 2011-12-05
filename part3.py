@@ -54,6 +54,17 @@ def globalMacro():
             #print expended_code if pairp(expended_code) and expended_code.car=='cons' else None
             return buildExp9(expended_code)
         topmacro[name] = expend
+    def loadMacro(filename):
+        with open(os.path.abspath(filename)) as f:
+            code = f.read()
+            #print "file>",code
+            start = 0
+            while 1:
+                t,end = peekSexp(code,start)
+                if end==-1:
+                    break
+                defmacro(code[start:end])
+                start = end        
     with open(os.path.abspath("initsyx.scm")) as f:
         code = f.read()
         #print "file>",code
@@ -71,7 +82,9 @@ def globalMacro():
     #defvar
     defmacro("""(defmarco begin lst
                     (cons '::begin lst))""")
-    defmacro(open("quasiquote.scm").read())
+    #defmacro(open("quasiquote.scm").read())
+    loadMacro("quasiquote.scm")
+    loadMacro("initsyn2.scm")
     return defmacro
 defmacro = globalMacro
 @block
@@ -167,6 +180,7 @@ def _():
         bindPyFun("<",chanp(lambda a,b:a<b))
         bindPyFun(">=",chanp(lambda a,b:a>=b))
         bindPyFun("<=",chanp(lambda a,b:a<=b))
+        bindPyFun("integer?",lambda x:x%1==0)
 ##        @defun("<")
 ##        def _(x):
 ##            return x.car<x.cdr.car
@@ -207,8 +221,8 @@ def _():
     @block
     def logic():
         define("not",Prc(lambda arg:not arg.car))
-        define("#t",True)
-        define("#f",False)#use lex later
+##        define("#t",True)
+##        define("#f",False)#use lex later
 
     
     @block
@@ -235,7 +249,12 @@ def _():
     @block
     def vector():
         define("vector",Prc(lambda arg:arg.toPyList() if arg else []))
-					
+    
+    @block
+    def morelib():
+        bindPyFun("list?",listp)
+        #Scm.load("libtinyscheme.scm",topenvrn)
+
 @block
 def topExtend():
 	pass

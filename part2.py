@@ -117,6 +117,7 @@ class BlkApp9(BlkLmd9):
 ##class SymDct(dict):
 ##    pass
 topmacro = {}
+topsform = {}
 topenvrn = Env()
 def buildExp9(sexp):
     raw_define = Sym('::define')

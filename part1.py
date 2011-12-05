@@ -36,6 +36,10 @@ pattern = r'''
 |(?P<qqt>`)
 |(?P<uqs>,@)
 |(?P<uqt>,)
+|(?P<blt>\#[tT])
+|(?P<blf>\#[fF])
+|(?P<chr>\#\\.[^ \t\n\r]*)
+|(?P<shr>\#)
 |(?P<num>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)
 |(?P<str>\"(\\.|[^"])*\")
 |(?P<wht>([ \t\n\r]+)|(;.*?[\n\r]))
@@ -80,11 +84,18 @@ def sexpToPyList(pair):
     return pyList
     #must no rec here!
 def listp(lst):
-    raise NotImplementedError()
+    if pairp(lst) and nullp(lst.cdr):
+        return True
+    elif pairp(lst.cdr):
+        return listp(cdr(lst))
+    return False
 class T:
     pass
-class Char:#not use it,do as python do
-    pass
+class Chr(str):#not use it,do as python do
+    def toPyInt(self):
+        return ord(self)
+    def toPyStr(self):
+        return self
 class Par(tuple):
     @property
     def car(self):
@@ -212,6 +223,23 @@ def peekSexp(text,start=0):
             if end==-1:
                 return "syx err",-1
             return (exp),end
+        elif tag[0]=='shr':
+            exp,end = sshr(s,end)
+            if end==-1:
+                return "syx err",-1
+            return exp,end
+        elif tag[0]=='blt':
+            return True,end
+        elif tag[0]=='blf':
+            return False,end
+        elif tag[0]=='chr':
+            if len(tag[1])==3:
+                return Chr(tag[1][2]),end
+            elif tag[1]==r'#\space':
+                return Chr(' '),end
+            elif tag[1]==r'#\newline':
+                return Chr('\n'),end
+            raise SyxErr("not a char")
         raise SyxErr(tag,end,s[pos:end])
     def srst(s,pos):
         tag,end = peekToken(s,pos)
@@ -243,6 +271,15 @@ def peekSexp(text,start=0):
             raise SyxErr("I need ')' please!")
         return exp,end2
         raise Exception()
+    def sshr(s,pos):
+        exp,end = sexp(s,pos)
+        if end==-1:
+            raise SyxErr()
+##        if exp=="t":
+##            return True,end
+##        elif exp=='f':
+##            return False,end
+        raise NotImplemented
     return sexp(text,start)
 read = peekSexp
 

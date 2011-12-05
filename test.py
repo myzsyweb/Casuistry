@@ -30,7 +30,14 @@ class Test(unittest.TestCase):
             self.s.read("(quasiquote ((unquote +) (unquote a) 1))"))
         self.assertEqual(self.s.read("`(12 ,@(+ 2 a) 5)"),
             self.s.read("(quasiquote (12 (unquote-splicing (+ 2 a)) 5 ))"))
-
+        self.assertEqual(self.s.read("#t"),True)
+        self.assertEqual(self.s.read("#f"),False)
+        self.assertEqual(self.s.read(r"#\a"),"a")
+        self.assertEqual(self.s.read(r"#\A"),"A")
+        self.assertEqual(self.s.read(r"#\("),"(")
+        self.assertEqual(self.s.read(r"#\ ")," ")
+        self.assertEqual(self.s.read(r"#\space")," ")
+        self.assertEqual(self.s.read(r"#\newline"),"\n")
 
     def testType(self):
         self.assertTrue(self.s.sh("(pair? (quote (+ 1 2)))"))
@@ -154,7 +161,28 @@ class Test(unittest.TestCase):
     def testQuasiquote(self):
         self.assertEqual(s.sh("""`(a 1 ,(+ 1 1) ,@(list 1 2))"""), s.sh("""'(a 1 2 1 2)"""))
         self.assertEqual(s.sh("""((lambda ()(define (f x) (+ x 1))`(1 ,(f 1))))"""), s.sh("""'(1 2)"""))
-        
+
+    def testLet(self):
+        self.assertEqual(s.sh("""(let* () 1 2 3)"""), 3)
+        self.assertEqual(s.sh("""(let* ((a 3)) a)"""), 3)
+        self.assertEqual(s.sh("""(let ((a 1)(b 2)) (+ a b))"""), 3)
+        self.assertEqual(s.sh("""(let* ((a 1)(b a)) (+ a b b))"""), 3)
+        self.assertEqual(s.sh("""(let ((x 2) (y 3))
+                                  (let* ((x 7)
+                                         (z (+ x y)))
+                                    (* z x)))"""), 70)
+        self.assertEqual(s.sh("""(letrec ((even?
+                                      (lambda (n)
+                                        (if (zero? n)
+                                            #t
+                                            (odd? (- n 1)))))
+                                     (odd?
+                                      (lambda (n)
+                                        (if (zero? n)
+                                            #f
+                                            (even? (- n 1))))))
+                              (even? 88))"""), True)
+        self.assertEqual(s.sh("""(let ((a 1)(b 2)) (let* ((b a)(a b)) (= a b)))"""), True)
     def testOutside(self):
         self.s.load("test.scm",self.s.env())
 

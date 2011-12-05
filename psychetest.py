@@ -23,10 +23,14 @@
 """
 Tests the interpreter module
 """
+from part3 import *
+Symbol=Sym
+Pair=cons
+char=Chr
+EMPTY_LIST=None
+TRUE=True
+FALSE=False
 
-from psyche.interpreter import Interpreter, UndefinedException, \
-                               SchemeException
-from psyche.types import *
 import unittest
 import string
 
@@ -42,16 +46,16 @@ class InterpreterTest(unittest.TestCase):
 
     def __init__(self, *args):
         unittest.TestCase.__init__(self, *args)
-        self.interpreter = Interpreter()
+        self.s=Scm()
 
     def eval(self, expression):
-        return self.interpreter.eval(expression)
+        return self.s.sh(expression)
 
     def assertEval(self, expression, result):
         """Asserts that the specified expression evaluates to the
         specified result.
         """
-        eval = self.interpreter.eval(expression)
+        eval = self.s.sh(expression)
         self.failIf(eval != result,
                     "%s => %s, expected %s"
                     % (expression, eval, result))
@@ -60,7 +64,7 @@ class InterpreterTest(unittest.TestCase):
         """Asserts that the specified expressions evaluates to a
         number that differs at most epsilon from floatResult.
         """
-        eval = self.interpreter.eval(expression)
+        eval = self.s.sh(expression)
 
         self.failIf(abs(floatResult - eval) > epsilon,
                     "%s ==> %f, expected %f"
@@ -71,7 +75,7 @@ class InterpreterTest(unittest.TestCase):
         evaluation.
         """
         try:
-            self.interpreter.eval(expression)
+            self.s.sh(expression)
         except Exception:
             return
 
@@ -526,7 +530,7 @@ class SICPTest(InterpreterTest):
 #
         
 
-# some useful constants
+#some useful constants
 A = Symbol("a")
 B = Symbol("b")
 C = Symbol("c")
@@ -1228,5 +1232,8 @@ def suite():
 
     return suite
         
-
+if __name__ == '__main__':
+    import sys
+    sys.setrecursionlimit(200)
+    unittest.main()
 

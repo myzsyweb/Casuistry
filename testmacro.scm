@@ -97,3 +97,21 @@
 (display (apply quasiquwteex '(((unquwte a) 2 3))))
 (display '(quwte (a)))
 (apply quasiquwteex '((a)))
+
+(define let*1 
+  (lambda (h . t) 
+    (if (null? h) `(begin . ,t)
+        `(let (,(car h)) (let* ,(cdr h) . ,t))))
+  )
+(display (apply let*1 (cdr ' (let* ()1 2 3))))
+(display (apply let*1 (cdr ' (let* ((a 1))1 2 3))))
+(display (apply let*1 (cdr ' (let* ((a 1)(b 2))1 2 3))))
+(define letrec1 
+  (lambda (h . t) 
+    `((lambda () ,@(map (lambda (x) `(define . ,x)) h) . ,t)))
+        )
+   
+ 
+(display (apply letrec1 (cdr ' (letrec ()1 2 3))))
+(display (apply letrec1 (cdr ' (letrec ((a 1))1 2 3))))
+(display (apply letrec1 (cdr ' (letrec ((a 1)(b 2))1 2 3))))

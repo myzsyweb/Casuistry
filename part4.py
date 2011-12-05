@@ -1,6 +1,8 @@
 from part3 import *
-def pprint(sexp):
-    if sexp==None:
+def symbolp(sexp):
+    return isa(sexp,str)
+def pp(sexp):
+    if sexp is None:
         return "'()"
     elif sexp==True:
         return "#t"
@@ -8,14 +10,18 @@ def pprint(sexp):
         return "#f"
     #elif eofp(sexp)
     elif symbolp(sexp):
-        return "<symbol %s>"%sexp
+        return "%s"%str(sexp).upper()
     #stringp(sexp) '""'%sexp uns***
     elif procedurep(sexp):
         return "<procedure>"
-    elif pair(sexp):
+    elif pairp(sexp):
         if listp(sexp):
-            return str(pprint(x) for x in sexp.toPyList())
+            return "[%s]"%(" ".join(pp(x) for x in sexp.toPyList()))
         else:
-            return "(%s . %s)"%map(pprint,(sexp.car,sexp.cdr))
+            return "(%s . %s)"%map(pp,(sexp.car,sexp.cdr))
     else:
-        return sexp
+        return str(sexp)
+def displayToStr():
+    pass
+def writeToStr():
+    pass
