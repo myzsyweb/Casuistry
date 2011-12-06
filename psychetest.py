@@ -30,7 +30,11 @@ char=Chr
 EMPTY_LIST=None
 TRUE=True
 FALSE=False
-
+SchemeException=Exception
+UndefinedException=Exception
+Vector=list
+frac=Fraction
+pairFromList=sexpToPyList
 import unittest
 import string
 

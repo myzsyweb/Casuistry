@@ -1,3 +1,5 @@
+(defmarco if (e t . f)
+  (cons '::if (cons e (cons t (::if (null? f) (cons '() '()) f)))))
 (defmarco define lst
                  (if (pair? (car lst))
                      (cons '::define (cons (car (car lst)) (cons (cons 'lambda (cons (cdr (car lst)) (cdr lst))) '())))

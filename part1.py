@@ -38,12 +38,12 @@ pattern = r'''
 |(?P<uqt>,)
 |(?P<blt>\#[tT])
 |(?P<blf>\#[fF])
-|(?P<chr>\#\\.[^ \t\n\r]*)
+|(?P<chr>\#\\.[^ \)\t\n\r]*)
 |(?P<shr>\#)
 |(?P<num>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)
 |(?P<str>\"(\\.|[^"])*\")
 |(?P<wht>([ \t\n\r]+)|(;.*?[\n\r]))
-|(?P<sym>[^ \)\(\t\n\r]+)
+|(?P<sym>[^ ;\)\(\t\n\r]+)
 '''
 token = re.compile(pattern,re.S|re.X)
 def peekToken(text,start=0):
@@ -53,13 +53,13 @@ def peekToken(text,start=0):
         return tag[0],regex.end()
     return None,None
 ##peekToken(code)
-##def  tokenTest(code):
-##    tmp = code
-##    nxt = 0
-##    while nxt is not None:
-##        tag,nxt = peekToken(tmp,nxt)
-##        print tag
-##tokenTest(code)
+def printTokens(code):
+    tmp = code
+    nxt = 0
+    while nxt is not None:
+        tag,nxt = peekToken(tmp,nxt)
+        print tag
+#tokenTest(code)
 #########################type####################
 class Err(Exception):
     pass
@@ -96,6 +96,8 @@ class Chr(str):#not use it,do as python do
         return ord(self)
     def toPyStr(self):
         return self
+def charp(ch):
+    return isa(ch,str) and len(ch)==1#use int later to support unicode
 class Par(tuple):
     @property
     def car(self):
@@ -135,6 +137,8 @@ class Par(tuple):
     #def pprint
 class Sym(str):
     pass
+def symbolp(sym):
+    return isa(sym,str) or isa(sym,Sym)
 class Str(str):
     pass
 from fractions import Fraction
@@ -144,8 +148,14 @@ def numberp(x):
 class Num(Fraction):
     def __repr__(self):
         return str(self)
+class Vec(list):
+    pass
+def vectorp(vec):
+    return isa(vec,list) or isa(vec,tuple)
 class Bol:
     pass
+def truep(bol):
+    return bol is not False
 class SymMap(dict):
     pass
 class Env:
@@ -235,9 +245,9 @@ def peekSexp(text,start=0):
         elif tag[0]=='chr':
             if len(tag[1])==3:
                 return Chr(tag[1][2]),end
-            elif tag[1]==r'#\space':
+            elif tag[1].lower()==r'#\space':
                 return Chr(' '),end
-            elif tag[1]==r'#\newline':
+            elif tag[1].lower()==r'#\newline':
                 return Chr('\n'),end
             raise SyxErr("not a char")
         raise SyxErr(tag,end,s[pos:end])

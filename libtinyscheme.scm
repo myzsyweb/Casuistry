@@ -2,8 +2,8 @@
 
 ; Per R5RS, up to four deep compositions should be defined
 (define (caar x) (car (car x)))
-(define (cadr x) (car (cdr x)))
-(define (cdar x) (cdr (car x)))
+;(define (cadr x) (car (cdr x)))
+;(define (cdar x) (cdr (car x)))
 (define (cddr x) (cdr (cdr x)))
 (define (caaar x) (car (car (car x))))
 (define (caadr x) (car (car (cdr x))))
@@ -50,12 +50,12 @@
 (define (inexact? x) (and (real? x) (not (integer? x))))
 (define (even? n) (= (remainder n 2) 0))
 (define (odd? n) (not (= (remainder n 2) 0)))
-(define (zero? n) (= n 0))
+;(define (zero? n) (= n 0))
 (define (positive? n) (> n 0))
 (define (negative? n) (< n 0))
-(define complex? number?)
-(define rational? real?)
-(define (abs n) (if (>= n 0) n (- n)))
+;(define complex? number?)
+;(define rational? real?)
+;(define (abs n) (if (>= n 0) n (- n)))
 (define (exact->inexact n) (* n 1.0))
 (define (<> n1 n2) (not (= n1 n2)))
 (define (max . lst)
@@ -314,17 +314,17 @@
 ;  (not (pair? x)))
 
 ;;;;    equal?
-(define (equal? x y)
-     (cond
-          ((pair? x)
-               (and (pair? y)
-                    (equal? (car x) (car y))
-                    (equal? (cdr x) (cdr y))))
-          ((vector? x)
-               (and (vector? y) (vector-equal? x y)))
-          ((string? x)
-               (and (string? y) (string=? x y)))
-          (else (eqv? x y))))
+;(define (equal? x y)
+;     (cond
+;          ((pair? x)
+;               (and (pair? y)
+;                    (equal? (car x) (car y))
+;                    (equal? (cdr x) (cdr y))))
+;          ((vector? x)
+;               (and (vector? y) (vector-equal? x y)))
+;          ((string? x)
+;               (and (string? y) (string=? x y)))
+;          (else (eqv? x y))))
 
 ;;;; (do ((var init inc) ...) (endtest result ...) body ...)
 ;;
@@ -366,8 +366,8 @@
      (generic-member eq? obj lst))
 (define (memv obj lst)
      (generic-member eqv? obj lst))
-(define (member obj lst)
-     (generic-member equal? obj lst))
+;(define (member obj lst)
+;     (generic-member equal? obj lst))
 
 ;;;; generic-assoc
 (define (generic-assoc cmp obj alst)
@@ -458,7 +458,7 @@
 
 ; Redefine this if you install another package infrastructure
 ; Also redefine 'package'
-(define *colon-hook* eval)
+;(define *colon-hook* eval)
 
 ;;;;; I/O
 ;

@@ -134,11 +134,11 @@ def buildExp9(sexp):
     def form(sexp):
         assert pairp(sexp)
         op = car(sexp)
-        if op==Sym('if'):
+        if op==Sym('::if'):
             test = build(sexp.cdr.car)
             then = build(sexp.cdr.cdr.car)
             fail = build(sexp.cdr.cdr.cdr.car)
-            return lambda env,c:tuk(test,(env,lambda v:then(env,c)if v else fail(env,c)))
+            return lambda env,c:tuk(test,(env,lambda v:then(env,c)if truep(v) else fail(env,c)))
         elif op==Sym('lambda'):
             arg = sexp.cdr.car
             #bodys = sexp.cdr.cdr.map(build)#to one blk
@@ -162,7 +162,7 @@ def buildExp9(sexp):
         raise Exception()
     def build(sexp):
         if pairp(sexp):
-            if car(sexp) in [Sym('if'),Sym('lambda'),Sym('quote'),Sym('::begin'),raw_define]:
+            if car(sexp) in [Sym('::if'),Sym('lambda'),Sym('quote'),Sym('::begin'),raw_define]:
                 return form(sexp)
             if car(sexp) in topmacro:
                 #raise "define"

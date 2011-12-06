@@ -23,5 +23,5 @@ def pp(sexp):
         return str(sexp)
 def displayToStr():
     pass
-def writeToStr():
-    pass
+##def writeToStr():
+##    pass

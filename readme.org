@@ -1,16 +1,21 @@
 一个简单的Python制Scheme实现
 
+: Programming languages should be designed not by piling feature on top of feature, but by removing the weaknesses and restrictions that make additional features appear necessary. Scheme demonstrates that a very small number of rules for forming expressions, with no restrictions on how they are composed, suffice to form a practical and efficient programming language that is flexible enough to support most of the major programming paradigms in use today.
+: ——摘自《R5RS Introduction》
 * 施工中TODO
  + 更多的测试代码
- + 补完词法
- + 实现语句宏
- + 改善错误提示
- + pprint_pairlist
+ + 改进语句宏
+ + 改善错误提示，对语句错误给出提示
  + 代码生成
- + 调整内置类型
  + 移植其他Scm实现中的测试代码
  + amb
-
+ + 调整内置类型
+ + 复数和向量类型
+ + 区分精确和非精确数字类型
+ + Python2 的整数除法问题
+ + 区分字符串，字符类型和符号类型
+ + 识别字符串中的转码
+ + 注意和Python内置类型的混合使用
 * 说明
 一个简单的Python制Scheme实现
  + 名称 :: Casuistry Scheme
@@ -18,6 +23,7 @@
  + 作者 :: ee.zsy
 ** 特性
 no`!' scope tail-call call/cc
+
 
 * 使用
 坑
@@ -48,14 +54,16 @@ Nov.2011~
 可通过内部定义的全局Macro来扩展eval的行为，并可用Scm文件提供预定义过程。
 稍稍整理了一下预定义的过程，不过其实这个不是很必要，可以到需要时再定义。
 *** Dec.2
-补完了一些词法，不过目前都是些不大要紧调整，无非就是在现有实现上改改代码了。
+补完quasiquote词法，不过目前都是些不大要紧调整，无非就是在现有实现上改改代码了。
 看来可以有另一条思路并行来实现一些新的东西了，比如正考虑尝试支持代码生成版本。
 *** Dec.3
 为quasiquote词法引入相应的宏实现，驳接了TinyScheme里面的相应宏的代码。
 测试发现不小心出bug了，原因是当前‘string?’的判断只是一个替代实现，不严格。
-*** Dec.5
-导入了Psyche和Sisc的测试代码，看着满屏幕的Fail和Error给人充满干劲的样子
-给词法实现了字符类型的识别，实现了let*,letrec宏，
+*** Dec.5-6
+导入了Psyche和Sisc的测试代码，看着满屏幕的Fail和Error给人充满干劲的样子。
+词法实现了字符类型的识别，实现了let*,letrec宏，合并TinyScheme部分Scheme过程。
+补完了一些没有实现的预置过程，fix了一些语义上的错误，不过其实还没做完。
+
 ** 阶段三
 添加一些其他的扩展功能
 
@@ -110,7 +118,7 @@ Nov.2011~
 * 代码原则
  + 保持简单
  + 不必要遵守以下代码原则
- + 能暂时不实现的功能就不去实现它，能推迟的改动尽量推迟
+ + 能暂时不实现的功能就不去实现它，可以不实现的就不实现，能推迟的改动尽量推迟
  + 推迟可能的rename，很麻烦且没必要，重在另一个模块里定义倒是可以的
  + 当功能有眼前看得见的好处的时候才去实现它，比如实现另一个功能用到
  + 优先考虑实现新的功能，即使重构也是整理新版本出来，切勿做出多余的事情来

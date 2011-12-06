@@ -183,6 +183,28 @@ class Test(unittest.TestCase):
                                             (even? (- n 1))))))
                               (even? 88))"""), True)
         self.assertEqual(s.sh("""(let ((a 1)(b 2)) (let* ((b a)(a b)) (= a b)))"""), True)
+
+    def testChar(self):
+        self.assertEqual(s.sh(r"(<= (char->integer #\a)(char->integer #\b))"), True)
+
+    def testType2(self):
+        self.assertTrue(self.s.sh("(pair? (quote (+ 1 2)))"))
+        self.assertTrue(self.s.sh("(symbol? 'abc"))
+        self.assertTrue(self.s.sh("(pair? (quote (+ 1 2)))"))
+        self.assertTrue(self.s.sh("(pair? (quote (+ 1 2)))"))
+        self.assertTrue(self.s.sh("(pair? (quote (+ 1 2)))"))
+        self.assertTrue(self.s.sh("(pair? (quote (+ 1 2)))"))
+
+    def testFix(self):
+        self.assertEqual(self.s.sh("(- 1)"), -1)
+        self.assertEqual(self.s.sh("(- 1 2)"), -1)
+        self.assertEqual(self.s.sh("(/ 2 1)"), 2)
+        self.assertEqual(self.s.sh("(not '())"), False)
+        self.assertEqual(self.s.sh("(if 0 2 3)"), 2)
+        self.assertTrue(self.s.sh("'a;a"),self.s.sh("'a"))
+        self.assertTrue(self.s.sh(r"(char? #\SPaCE)"))
+        
+        
     def testOutside(self):
         self.s.load("test.scm",self.s.env())
 
@@ -194,7 +216,7 @@ print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 s = Scm()
 r = s.repl
 l = s.load
-print s.sh("1")
+print s.sh(r"""1""")
 
 
 if __name__ == '__main__':

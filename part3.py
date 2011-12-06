@@ -169,18 +169,22 @@ def _():
         
     @block
     def math():
+        from numbers import Complex,Real,Rational
         define("+nan.0",float('nan'))
         bindPyFun("number?",numberp)
         define("+",PyFun(lambda *lst:reduce(lambda x,y:x+y,lst,0)))
-        define("-",PyFun(lambda *lst:reduce(lambda x,y:x-y,lst,)))
+        define("-",PyFun(lambda *lst:reduce(lambda x,y:x-y,lst) if len(lst)>1 else -lst[0]))
         define("*",PyFun(lambda *lst:reduce(lambda x,y:x*y,lst,1)))
-        define("/",PyFun(lambda *lst:reduce(lambda x,y:x/y,lst)))
+        define("/",PyFun(lambda *lst:reduce(lambda x,y:x/y,lst) if len(lst)>1 else 1/lst[0]   ))
         bindPyFun("=",chanp(lambda a,b:a==b))
         bindPyFun(">",chanp(lambda a,b:a>b))
         bindPyFun("<",chanp(lambda a,b:a<b))
         bindPyFun(">=",chanp(lambda a,b:a>=b))
         bindPyFun("<=",chanp(lambda a,b:a<=b))
-        bindPyFun("integer?",lambda x:x%1==0)
+        bindPyFun("integer?",lambda x:x%1==0)#can be inex!
+        bindPyFun("complex?",lambda x:isa(x,Complex))
+        bindPyFun("real?",lambda x:isa(x,Real))
+        bindPyFun("rational?",lambda x:isa(x,Rational))
 ##        @defun("<")
 ##        def _(x):
 ##            return x.car<x.cdr.car
@@ -196,6 +200,7 @@ def _():
     @block
     def math2():
         import math
+        #from math import exp,log
         dct={
             'abs':abs,
             'quotient':lambda a,b:int(a / b),
@@ -214,13 +219,15 @@ def _():
             'acos':math.acos,
             'atan':math.atan,
             'sqrt':math.sqrt,
+            'expt':pow,#use builtin not math
+            #'expt':lambda a,b:0 if b==0 else(1 if a==0 else exp(b*log(a))),#ritht?
             }
         for k,v in dct.items():
             bindPyFun(k,v)
 
     @block
     def logic():
-        define("not",Prc(lambda arg:not arg.car))
+        define("not",Prc(lambda arg:not truep(arg.car)))
 ##        define("#t",True)
 ##        define("#f",False)#use lex later
 
@@ -246,14 +253,21 @@ def _():
             def _(x):
                     check(numberp(x.car))
                     return str(x.car)
+            @defun("char->integer",topenvrn)
+            def _(x):
+                    check(charp(x.car))
+                    return ord(x.car)
     @block
     def vector():
-        define("vector",Prc(lambda arg:arg.toPyList() if arg else []))
+        define("vector",Prc(lambda arg:Vec(arg.toPyList() if arg else [])))
+        bindPyFun("vector?",vectorp)
     
     @block
     def morelib():
         bindPyFun("list?",listp)
-        #Scm.load("libtinyscheme.scm",topenvrn)
+        bindPyFun("symbol?",symbolp)
+        bindPyFun("char?",charp)
+        Scm.load("libtinyscheme.scm",topenvrn)
 
 @block
 def topExtend():
