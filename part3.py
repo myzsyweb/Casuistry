@@ -13,7 +13,7 @@ class Scm:
         toplevel=toplevel if toplevel else topenvrn
         self._env = toplevel.extend()
     def sh(self,code):
-        return eval9(read("%s"%code)[0],self._env)
+        return eval9(read("(begin %s)"%code)[0],self._env)
     @staticmethod    
     def load(filename,env):
         with open(os.path.abspath(filename)) as f:
@@ -265,6 +265,8 @@ def _():
     def vector():
         define("vector",Prc(lambda arg:Vec(arg.toPyList() if arg else [])))
         bindPyFun("vector?",vectorp)
+        bindPyFun("make-vector",lambda k,f=None:[f]*int(k))
+        bindPyFun("vector-ref",lambda v,k:v[int(k)])
     
     @block
     def morelib():

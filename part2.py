@@ -169,7 +169,7 @@ def buildExp9(sexp):
         if pairp(sexp):
             if car(sexp) in [Sym('::if'),Sym('lambda'),Sym('quote'),Sym('::begin'),raw_define,Sym('set!')]:
                 return form(sexp)
-            if car(sexp) in topmacro:
+            if symbolp(car(sexp)) and car(sexp) in topmacro:
                 #raise "define"
                 return topmacro[car(sexp)](sexp)
             op = build(car(sexp))

@@ -205,14 +205,17 @@ class Test(unittest.TestCase):
         self.assertTrue(self.s.sh(r"(char? #\SPaCE)"))
 
     def testFix2(self):
-        pass
-        #self.assertEqual(self.s.sh("(let()1)"), 1)
-
+        self.assertEqual(self.s.sh("(let()1)"), 1)
+        self.assertEqual(self.s.sh("((lambda () #(1)))"), self.s.sh(r"#(1)"))
+        self.assertEqual(self.s.sh("(length '(1 2))"), 2)
+        self.assertEqual(self.s.sh("(length '())"), 0)
     def testVector(self):
         self.assertEqual(self.s.sh(r"#(1)"),self.s.sh("(vector 1)"))
         self.assertEqual(self.s.sh(r"#(1 2)"),self.s.sh("(vector 1 2)"))
         self.assertEqual(self.s.sh(r"#(1 2 3)"),self.s.sh("(vector 1 2 3)"))
         self.assertEqual(self.s.sh(r"#()"),self.s.sh("(vector)"))
+        #self.assertEqual(self.s.sh(r"(map + '(1 2 3) '(4 5 6))"),self.s.sh("(5 7 9)"))
+        #self.assertEqual(self.s.sh(r"(apply + 1 2 '(3 4)) "),10)
         
     def testOutside(self):
         self.s.load("test.scm",self.s.env())

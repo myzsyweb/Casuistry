@@ -217,6 +217,7 @@ class Env:
             var[arg]=val
         #print "extend>",var
         return Env(var,self)
+    #give more info here
 #    def mset(self,sym,val):
 #        if not CanUseMset:
 #            raise Err("set!")

@@ -21,3 +21,5 @@
     (if (null? a) b
         (cons (car a) (append (cdr a) b))))
   (fold-left append '() x))
+(define (length x)
+  (fold-right (lambda (a b) (+ b 1)) 0 x))
