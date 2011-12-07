@@ -13,6 +13,7 @@ Programming languages should be designed not by piling feature on top of feature
  + 改善错误提示，对语句错误给出合理提示
  + 代码生成
  + 移植其他Scm实现中的测试代码
+ + 简化宏展开过程
  + 测试amb功能
  + 调整内置类型
  + 复数和向量类型

@@ -66,7 +66,7 @@ class Err(Exception):
 class Obj:
     pass
 nil = None
-CanUseMset = True and False
+CanUseMset = True# and False
 TypePairImpl = tuple
 if CanUseMset:
     TypePairImpl = list
@@ -197,7 +197,7 @@ class Env:
     def __repr__(self):
         return str((self.var,self.bas))
     def define(self,sym,val):
-        if sym in self.var:# and not CanUseMset:
+        if sym in self.var and not CanUseMset:
             raise Err("I has '%s' already."%sym)
         self.var[sym] = val;
     def lookup(self,sym):
@@ -218,11 +218,12 @@ class Env:
             var[arg]=val
         #print "extend>",var
         return Env(var,self)
-    #give more info here
-#    def mset(self,sym,val):
-#        if not CanUseMset:
-#            raise Err("set!")
-#        self.var[sym] = val
+    #give more info here!!!!
+    def mset(self,sym,val):
+        if not CanUseMset:
+            raise Err("set!")
+        print "set %s to %s"%(val,sym)
+        self.var[sym] = val
 class Prc:
     def __init__(self,pred=None):
         self.pred = pred
@@ -253,7 +254,7 @@ def peekSexp(text,start=0):
         elif tag[0]=='num':
             return Num(tag[1]),end
         elif tag[0]=='str':
-            return Str(tag[1][1:-1]),end
+            return Str(tag[1][1:-1].replace(r'\"','"')),end
         elif tag[0]=='qte':
             exp,end = sexp(s,end)
             if end==-1:

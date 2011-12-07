@@ -262,6 +262,11 @@ def _():
             def _(x):
                     check(charp(x.car))
                     return ord(x.car)
+            @defun("integer->char",topenvrn)
+            def _(x):
+                    #check(charp(x.car))
+                    return chr(int(x.car))                
+                
     @block
     def vector():
         define("vector",Prc(lambda arg:Vec(arg.toPyList() if arg else [])))

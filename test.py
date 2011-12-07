@@ -211,6 +211,9 @@ class Test(unittest.TestCase):
         self.assertEqual(self.s.sh("((lambda () #(1)))"), self.s.sh(r"#(1)"))
         self.assertEqual(self.s.sh("(length '(1 2))"), 2)
         self.assertEqual(self.s.sh("(length '())"), 0)
+        self.assertTrue("""(begin (define x (list 'a 'b))(define y x)(eq? x y))""")
+        self.assertTrue("""((lambda ()(define x (list 'a 'b))(define y x)(eq? x y)))""")
+        
     def testVector(self):
         self.assertEqual(self.s.sh(r"#(1)"),self.s.sh("(vector 1)"))
         self.assertEqual(self.s.sh(r"#(1 2)"),self.s.sh("(vector 1 2)"))

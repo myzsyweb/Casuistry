@@ -85,8 +85,8 @@ class BlkCont9(BlkLmd9):
     def apply(self,arg):
         BlkLmd9.apply(self,arg)
         raise Exception()
-    def apply2(self,arg,cont):
-        return self.bdy(arg.car)
+##    def apply2(self,arg,cont):
+##        return self.bdy(arg.car)
     def apply9(self,arg,cont):
         return self.bdy(arg.car)
 class BlkCwcc9(BlkLmd9):
@@ -162,15 +162,15 @@ def buildExp9(sexp):
             #return tukSeqs(bodys)
             #return lambda env,c:tuk(val,(env,lambda v:c(env.define(name,v))))
         #define-syntax
-#        elif op==Sym('set!'):
-#            assert CanUseMset
-#            name = sexp.cdr.car
-#            val = build(sexp.cdr.cdr.car)
-#            return lambda env,c:tuk(val,(env,lambda v:c(env.mset(name,v))))
+        elif op==Sym('set!'):
+            assert CanUseMset
+            name = sexp.cdr.car
+            val = build(sexp.cdr.cdr.car)
+            return lambda env,c:tuk(val,(env,lambda v:c(env.mset(name,v))))
         elif op==Sym('quote'):
             val = sexp.cdr.car
             return lambda env,c:tuk(c,(val,))
-        raise Exception()
+        raise Exception(sexp)
     def build(sexp):
         if pairp(sexp):
             if car(sexp) in [Sym('::if'),Sym('lambda'),Sym('quote'),Sym('::begin'),raw_define,Sym('set!')]:
@@ -194,7 +194,7 @@ def buildExp9(sexp):
                 else:
                     return cont(obj.apply(arg))
             return lambda env,c:tuk(op,(env,lambda v1:get_args(arg,env,lambda v2:app(v1,v2,c))))
-        elif sexp==Sym('call/cc'):
+        elif sexp==Sym('call/cc') or sexp==Sym('call-with-current-continuation'):
             return lambda env,c:tuk(c,(BlkCwcc9(env),))
         elif isa(sexp,Sym):
             return lambda env,c:tuk(c,(env.lookup(sexp),))
