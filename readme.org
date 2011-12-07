@@ -1,14 +1,19 @@
 一个简单的Python制Scheme实现
+#+begin_quote
+Programming languages should be designed not by piling feature on top of feature, but by removing the weaknesses and restrictions that make additional features appear necessary. Scheme demonstrates that a very small number of rules for forming expressions, with no restrictions on how they are composed, suffice to form a practical and efficient programming language that is flexible enough to support most of the major programming paradigms in use today.
+——摘自《R5RS·Introduction》
+#+end_quote
 
-: Programming languages should be designed not by piling feature on top of feature, but by removing the weaknesses and restrictions that make additional features appear necessary. Scheme demonstrates that a very small number of rules for forming expressions, with no restrictions on how they are composed, suffice to form a practical and efficient programming language that is flexible enough to support most of the major programming paradigms in use today.
-: ——摘自《R5RS Introduction》
+
 * 施工中TODO
  + 更多的测试代码
  + 改进语句宏
- + 改善错误提示，对语句错误给出提示
+ + 引入syntax-rule/case实现
+ + slib支持
+ + 改善错误提示，对语句错误给出合理提示
  + 代码生成
  + 移植其他Scm实现中的测试代码
- + amb
+ + 测试amb功能
  + 调整内置类型
  + 复数和向量类型
  + 区分精确和非精确数字类型
@@ -59,10 +64,10 @@ Nov.2011~
 *** Dec.3
 为quasiquote词法引入相应的宏实现，驳接了TinyScheme里面的相应宏的代码。
 测试发现不小心出bug了，原因是当前‘string?’的判断只是一个替代实现，不严格。
-*** Dec.5-6
+*** Dec.5-7
 导入了Psyche和Sisc的测试代码，看着满屏幕的Fail和Error给人充满干劲的样子。
 词法实现了字符类型的识别，实现了let*,letrec宏，合并TinyScheme部分Scheme过程。
-补完了一些没有实现的预置过程，fix了一些语义上的错误，不过其实还没做完。
+补完了一些没有实现的预置过程，fix了一些语义上的错误，不过其实还没做完，就这样。
 
 ** 阶段三
 添加一些其他的扩展功能
@@ -102,6 +107,7 @@ Nov.2011~
  + 区分#t#f‘()但是要使用Python内置类型，保证能互相调用
  + pprint
  + 语法前端
+ + TTK_GUI
 ** 不想添加的功能
  + 所有'!'结尾的过程
  + io相关的过程
