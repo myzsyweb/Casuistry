@@ -32,8 +32,8 @@
 (defmarco let lst
             (apply 
              (lambda (name bind . stmt)
-               (list (list 'lambda (list)(cons 'define (cons (cons name (if (null? bind) '() (map car bind))) stmt))
-                           (cons name (if (null?  bind) '() (map cadr bind))))))
+               (list (list 'lambda (list)(cons 'define (cons (cons name (if (null? bind) '() (::map car bind))) stmt))
+                           (cons name (if (null?  bind) '() (::map cadr bind))))))
              (if (symbol? (car lst)) lst (cons ':: lst) )))
 (defmarco and lst 
     (if (null? lst) #t

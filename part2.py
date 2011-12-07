@@ -54,7 +54,7 @@ class PyFun(Prc):
     def __call__(self,*arg):
         return self.func(*arg)
     def apply(self,arg):
-        assert pairp(arg) or nullp(arg)
+        assert pairp(arg) or nullp(arg) ,arg
         #print arg,(arg.toPyList() if arg else [])
         return apply(self.func,(arg.toPyList() if arg else []))
 class BlkLmd9(Prc):
@@ -107,6 +107,12 @@ class BlkApp9(BlkLmd9):
     def __repr__(self):
         return 'LAMBDA '+object.__repr__(self)
     def apply9(self,arg,cont):
+        xs = sexpToPyList(arg.cdr)
+        #print arg
+        if len(xs)>1:
+            arg = cons(arg.car,cons(pyListToSexp(xs[0:-1]+sexpToPyList(xs[-1])),nil))
+            #raise Exception(arg)
+            #print arg
         if isa(arg.car,BlkLmd9):
             return arg.car.apply9(arg.cdr.car,cont)
         else:

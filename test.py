@@ -73,7 +73,7 @@ class Test(unittest.TestCase):
         self.assertTrue(self.s.sh("(eqv? 100000000 100000000)"))
         self.assertTrue(not self.s.sh("(eqv? (cons 1 2) (cons 1 2))"))
         self.assertTrue(not self.s.sh("(eqv? (lambda () 1)(lambda () 2))"))
-        #self.assertTrue(not self.s.sh("(eqv? #f 'nil)"))
+        self.assertTrue(not self.s.sh("(eqv? #f 'nil)"))
         self.assertTrue(self.s.sh("(let ((p (lambda (x) x)))(eqv? p p))"))
 
     def testMarco(self):
@@ -214,8 +214,8 @@ class Test(unittest.TestCase):
         self.assertEqual(self.s.sh(r"#(1 2)"),self.s.sh("(vector 1 2)"))
         self.assertEqual(self.s.sh(r"#(1 2 3)"),self.s.sh("(vector 1 2 3)"))
         self.assertEqual(self.s.sh(r"#()"),self.s.sh("(vector)"))
-        #self.assertEqual(self.s.sh(r"(map + '(1 2 3) '(4 5 6))"),self.s.sh("(5 7 9)"))
-        #self.assertEqual(self.s.sh(r"(apply + 1 2 '(3 4)) "),10)
+        self.assertEqual(self.s.sh(r"(map + '(1 2 3) '(4 5 6))"),self.s.sh("'(5 7 9)"))
+        self.assertEqual(self.s.sh(r"(apply + 1 2 '(3 4)) "),10)
         
     def testOutside(self):
         self.s.load("test.scm",self.s.env())

@@ -8,7 +8,9 @@
 (define (fold-left p i x)
   (if (null? x) i
       (fold-left p (p i (car x)) (cdr x))))
-(define (map f x)
+;(define (map f x)
+;  (fold-right (lambda (a b) (cons (f a) b)) '() x))
+(define (::map f x)
   (fold-right (lambda (a b) (cons (f a) b)) '() x))
 (define (member obj lst)
   (cond
