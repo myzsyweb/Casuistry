@@ -14,6 +14,7 @@ Programming languages should be designed not by piling feature on top of feature
  + 代码生成
  + 移植其他Scm实现中的测试代码
  + 简化宏展开过程
+ + foreach和let的bug
  + 测试amb功能
  + 调整内置类型
  + 复数和向量类型
