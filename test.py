@@ -83,6 +83,7 @@ class Test(unittest.TestCase):
         self.assertEqual(self.s.sh("""(cond((= 1 2) 3)((= 4 5) 6)(else 7))"""), 7)
         self.assertEqual(self.s.sh("""(begin (cond((= 1 2) 3)((= 4 5) 6)) 7)"""), 7)
         self.assertEqual(self.s.sh("""(case (+ 1 1)((1) 1)((2) 2))"""), 2)
+
         
     def testTodo(self):
         print self.s.sh("(lambda (x) (+ x 1))")
@@ -161,7 +162,8 @@ class Test(unittest.TestCase):
     def testQuasiquote(self):
         self.assertEqual(s.sh("""`(a 1 ,(+ 1 1) ,@(list 1 2))"""), s.sh("""'(a 1 2 1 2)"""))
         self.assertEqual(s.sh("""((lambda ()(define (f x) (+ x 1))`(1 ,(f 1))))"""), s.sh("""'(1 2)"""))
-
+        #self.assertEqual(s.sh("""(do ((i 1 (+ i 1))(s 0 (+ s i)))((> i 100)s))"""), s.sh("""5050"""))
+        
     def testLet(self):
         self.assertEqual(s.sh("""(let* () 1 2 3)"""), 3)
         self.assertEqual(s.sh("""(let* ((a 3)) a)"""), 3)
@@ -234,4 +236,5 @@ print s.sh(r"""1""")
 if __name__ == '__main__':
     import sys
     sys.setrecursionlimit(200)
+    #sys.setrecursionlimit(2**16-1)
     unittest.main()

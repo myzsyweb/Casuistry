@@ -42,7 +42,7 @@ def block(f):
 def globalMacro():
     def defmacro(code):#not use outside,dut to scope
         sexp = Scm.read(code)
-        assert sexp.car=='defmarco'
+        assert sexp.car=='defmarco'#shoud defmcro
         name = sexp.cdr.car
         marco_rule = cons('lambda',sexp.cdr.cdr)
         def expend(sexp):
@@ -85,6 +85,7 @@ def globalMacro():
                     (cons '::begin lst))""")
     #defmacro(open("quasiquote.scm").read())
     loadMacro("quasiquote.scm")
+    loadMacro("do.scm")
     loadMacro("initsyn2.scm")
     return defmacro
 defmacro = globalMacro

@@ -138,3 +138,30 @@
 (display (apply let1 (cdr ' (let loop () 1 2 3))))
 (display (apply let1 (cdr ' (let loop ((a 1))1 2 3))))
 (display (apply let1 (cdr ' (let loop ((a 1)(b 2))1 2 3))))
+(define do1 
+  (lambda (vars endtest . body)
+             (let ((do-loop '::))
+               `(letrec ((,do-loop
+                           (lambda ,(map (lambda (x)
+                                           (if (pair? x) (car x) x))
+                                      `,vars)
+                             (if ,(car endtest)
+                               (begin ,@(cdr endtest))
+                               (begin
+                                 ,@body
+                                 (,do-loop
+                                   ,@(map (lambda (x)
+                                            (cond
+                                              ((not (pair? x)) x)
+                                              ((< (length x) 3) (car x))
+                                              (else (car (cdr (cdr x))))))
+                                       `,vars)))))))
+                  (,do-loop
+                    ,@(map (lambda (x)
+                             (if (and (pair? x) (cdr x))
+                               (car (cdr x))
+                               '()))
+                        `,vars)))))
+  )
+(apply do1 (cdr ' (do ((i 1 (+ i 1))(s 0 (+ s i)))((> i 100)s))
+            ))
