@@ -66,17 +66,32 @@ class Err(Exception):
 class Obj:
     pass
 nil = None
+#CanUseMset = False
+##TypePairImpl = tuple
+##if CanUseMset:
+##    TypePairImpl = list
 def cons(car,cdr):
     return Par.cons(car,cdr)
 def car(pair):
-    return pair[0]
+    #return pair[0]
+    return pair.car
 def cdr(pair):
-    return pair[1]
+    #return pair[1]
+    return pair.cdr
+#def mset_car(pair,val):
+#    assert CanUseMset
+#    pair.car=val
+#def mset_cdr(pair,val):
+#    assert CanUseMset
+#    pair.cdr=val
 def nullp(obj):
     return obj is None
 def pairp(pair):
-    return isinstance(pair,tuple) and len(pair)==2
+    #return (isinstance(pair,tuple) or isinstance(pair,list)) and len(pair)==2 #and not isa(pair,Vec)
+    return isa(pair,Par)
 def sexpToPyList(pair):
+##    if pair is None:
+##        return []
     pyList = []
     while not nullp(pair):
         pyList.append(car(pair))
@@ -84,6 +99,8 @@ def sexpToPyList(pair):
     return pyList
     #must no rec here!
 def listp(lst):
+    if nullp(lst):
+        return True
     if pairp(lst) and nullp(lst.cdr):
         return True
     elif pairp(lst.cdr):
@@ -108,6 +125,16 @@ class Par(tuple):
     @staticmethod
     def cons(car,cdr):
         return Par((car,cdr))
+##    @car.setter
+##    def car(self,val):
+##        assert CanUseMset
+##        self._car=val
+##    @cdr.setter
+##    def cdr(self,val):
+##        assert CanUseMset
+##        #list.__setitem__(self,1,val)
+##        #self[1]=val
+##        self._cdr=val
     def __repr__(self):
         return "(%s . %s)"%(self.car,self.cdr)
     def map(self,pred):
@@ -156,8 +183,12 @@ class Bol:
     pass
 def truep(bol):
     return bol is not False
-class SymMap(dict):
-    pass
+def booleanp(bol):
+    return bol is True or bol is False
+class SymTbl(dict):
+    def __setitem__(self,key, val):
+        assert isa(key,Sym)
+        return dict.__setitem__(self,key,val)
 class Env:
     def __init__(self,var=None,bas=None):
         self.bas = bas
@@ -165,8 +196,8 @@ class Env:
     def __repr__(self):
         return str((self.var,self.bas))
     def define(self,sym,val):
-        if sym in self.var:
-            raise Exception("I has '%s' already."%sym)
+        if sym in self.var:# and not CanUseMset:
+            raise Err("I has '%s' already."%sym)
         self.var[sym] = val;
     def lookup(self,sym):
         if sym in self.var:
@@ -174,7 +205,7 @@ class Env:
         elif self.bas is not None:
             return self.bas.lookup(sym)
         else:
-            raise Exception("I can't understand what '%s' means?"%sym)
+            raise Err("I can't understand what '%s' means."%sym)
     def extend(self,arg=None,val=None):
         #print "extend>",arg,val
         # "extend>",arg,val.car if val else None
@@ -186,6 +217,10 @@ class Env:
             var[arg]=val
         #print "extend>",var
         return Env(var,self)
+#    def mset(self,sym,val):
+#        if not CanUseMset:
+#            raise Err("set!")
+#        self.var[sym] = val
 class Prc:
     def __init__(self,pred=None):
         self.pred = pred
@@ -285,6 +320,9 @@ def peekSexp(text,start=0):
         exp,end = sexp(s,pos)
         if end==-1:
             raise SyxErr()
+        if listp(exp):
+            #print exp
+            return Vec(sexpToPyList(exp)),end
 ##        if exp=="t":
 ##            return True,end
 ##        elif exp=='f':

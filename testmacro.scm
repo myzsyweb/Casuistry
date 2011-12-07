@@ -122,3 +122,19 @@
 (apply if1 (cdr ' (if 0 1)))
 #(apply if1 (cdr' (if 0)))
 (apply if1 (cdr' (if 0 1 2 4)))
+
+(define let1 
+  (lambda lst
+            (apply 
+             (lambda (name bind . stmt)
+               (display name)
+               (list (list 'lambda (list)(cons 'define (cons (cons name (if (null? bind) '() (map car bind))) stmt))
+                           (cons name (if (null?  bind) '() (map cadr bind))))))
+             (if (symbol? (car lst)) lst (cons ':: lst) )))
+        )
+(display (apply let1 (cdr ' (let () 1 2 3))))
+(display (apply let1 (cdr ' (let ((a 1))1 2 3))))
+(display (apply let1 (cdr ' (let ((a 1)(b 2))1 2 3))))
+(display (apply let1 (cdr ' (let loop () 1 2 3))))
+(display (apply let1 (cdr ' (let loop ((a 1))1 2 3))))
+(display (apply let1 (cdr ' (let loop ((a 1)(b 2))1 2 3))))

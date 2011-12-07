@@ -13,7 +13,7 @@ class Scm:
         toplevel=toplevel if toplevel else topenvrn
         self._env = toplevel.extend()
     def sh(self,code):
-        return eval9(read(code)[0],self._env)
+        return eval9(read("%s"%code)[0],self._env)
     @staticmethod    
     def load(filename,env):
         with open(os.path.abspath(filename)) as f:
@@ -52,6 +52,7 @@ def globalMacro():
             #print sexp
             expended_code = trans.apply(sexp.cdr)
             #print expended_code if pairp(expended_code) and expended_code.car=='cons' else None
+            #print expended_code
             return buildExp9(expended_code)
         topmacro[name] = expend
     def loadMacro(filename):
@@ -150,6 +151,8 @@ def _():
             bindPyFun("cons",cons)
             bindPyFun("car",car)
             bindPyFun("cdr",cdr)
+#            bindPyFun("set-car!",mset_car)
+#            bindPyFun("set-cdr!",mset_cdr)
 
     @block
     def equal():
@@ -228,6 +231,7 @@ def _():
     @block
     def logic():
         define("not",Prc(lambda arg:not truep(arg.car)))
+        bindPyFun("boolean?",booleanp)
 ##        define("#t",True)
 ##        define("#f",False)#use lex later
 

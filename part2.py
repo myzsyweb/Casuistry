@@ -156,13 +156,18 @@ def buildExp9(sexp):
             #return tukSeqs(bodys)
             #return lambda env,c:tuk(val,(env,lambda v:c(env.define(name,v))))
         #define-syntax
+#        elif op==Sym('set!'):
+#            assert CanUseMset
+#            name = sexp.cdr.car
+#            val = build(sexp.cdr.cdr.car)
+#            return lambda env,c:tuk(val,(env,lambda v:c(env.mset(name,v))))
         elif op==Sym('quote'):
             val = sexp.cdr.car
             return lambda env,c:tuk(c,(val,))
         raise Exception()
     def build(sexp):
         if pairp(sexp):
-            if car(sexp) in [Sym('::if'),Sym('lambda'),Sym('quote'),Sym('::begin'),raw_define]:
+            if car(sexp) in [Sym('::if'),Sym('lambda'),Sym('quote'),Sym('::begin'),raw_define,Sym('set!')]:
                 return form(sexp)
             if car(sexp) in topmacro:
                 #raise "define"

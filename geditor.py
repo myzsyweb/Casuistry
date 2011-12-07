@@ -4,8 +4,9 @@ from ScrolledText import ScrolledText
 import tkMessageBox
 from Tkinter import *
 from ttk import *
-from main import Scm
+#from main import Scm
 import main
+ShowDebugInfo = True
 class Editor(ScrolledText):
     def __init__(self,*arg,**kw):
         ScrolledText.__init__(self,*arg,**kw)
@@ -32,7 +33,7 @@ class Application(Frame):
     def runCode(self):
         import traceback
         reload(main) 
-        s = Scm()
+        s = main.Scm()
         #print self.editor.get("1.0", "end-1c")
         code = self.editor.get("1.0", "end-1c")
         try:
@@ -44,7 +45,8 @@ class Application(Frame):
             self.output.delete("1.0", "end-1c")
             self.output.insert("1.0", code)
             traceback.format_exc()
-            tkMessageBox.showwarning("Error", traceback.format_exc())
+            if ShowDebugInfo:
+                tkMessageBox.showwarning("Error", traceback.format_exc())
             #traceback.print_exc()
         self.output.delete("1.0", "end-1c")
         self.output.insert("1.0", code)
@@ -54,13 +56,14 @@ class Application(Frame):
         self.output.insert("1.0", code)
 
     def createWidgets(self):
+        self.debug = Checkbutton(self,text="debug")
         self.quit = Button(self,text="Quit",command=self.quit)
         self.run = Button(self,text="Run",command= self.runCode)
         self.help = Button(self,text="Help",command=self.help)
         self.editor = ScrolledText(wrap="word")
         self.output = ScrolledText(wrap="word",height=7)
         
-
+        self.debug.pack({"side": "left"})
         self.run.pack({"side": "left"})
         self.help.pack({"side": "left"}) 
         self.quit.pack({"side": "left"})
