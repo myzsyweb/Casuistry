@@ -152,8 +152,8 @@ def _():
             bindPyFun("cons",cons)
             bindPyFun("car",car)
             bindPyFun("cdr",cdr)
-#            bindPyFun("set-car!",mset_car)
-#            bindPyFun("set-cdr!",mset_cdr)
+            bindPyFun("set-car!",mset_car)
+            bindPyFun("set-cdr!",mset_cdr)
 
     @block
     def equal():

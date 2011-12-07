@@ -66,10 +66,10 @@ class Err(Exception):
 class Obj:
     pass
 nil = None
-#CanUseMset = False
-##TypePairImpl = tuple
-##if CanUseMset:
-##    TypePairImpl = list
+CanUseMset = True and False
+TypePairImpl = tuple
+if CanUseMset:
+    TypePairImpl = list
 def cons(car,cdr):
     return Par.cons(car,cdr)
 def car(pair):
@@ -78,12 +78,12 @@ def car(pair):
 def cdr(pair):
     #return pair[1]
     return pair.cdr
-#def mset_car(pair,val):
-#    assert CanUseMset
-#    pair.car=val
-#def mset_cdr(pair,val):
-#    assert CanUseMset
-#    pair.cdr=val
+def mset_car(pair,val):
+    assert CanUseMset
+    pair.car=val
+def mset_cdr(pair,val):
+    assert CanUseMset
+    pair.cdr=val
 def nullp(obj):
     return obj is None
 def pairp(pair):
@@ -115,7 +115,7 @@ class Chr(str):#not use it,do as python do
         return self
 def charp(ch):
     return isa(ch,str) and len(ch)==1#use int later to support unicode
-class Par(tuple):
+class Par(TypePairImpl):
     @property
     def car(self):
         return self[0]
@@ -125,15 +125,16 @@ class Par(tuple):
     @staticmethod
     def cons(car,cdr):
         return Par((car,cdr))
-##    @car.setter
-##    def car(self,val):
-##        assert CanUseMset
+    @car.setter
+    def car(self,val):
+        assert CanUseMset
+        self[0]=val
 ##        self._car=val
-##    @cdr.setter
-##    def cdr(self,val):
-##        assert CanUseMset
+    @cdr.setter
+    def cdr(self,val):
+        assert CanUseMset
 ##        #list.__setitem__(self,1,val)
-##        #self[1]=val
+        self[1]=val
 ##        self._cdr=val
     def __repr__(self):
         return "(%s . %s)"%(self.car,self.cdr)
