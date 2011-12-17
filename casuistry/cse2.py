@@ -1,7 +1,7 @@
 #tail-call
-from part1 import *
+from cst1 import *
 import sys
-sys.setrecursionlimit(5000)
+sys.setrecursionlimit(600)
 def pyListToSexp(lst):
     return reduce(lambda s,i:cons(i,s),reversed(lst),nil)
 def pyListToPair(lst):
@@ -45,12 +45,12 @@ def tukrun(tuk):
 ##        pass
 ##class Cont:
 ##    pass
-class Apy:
-    pass
-class ApyC:
-    pass
-class ApyCT:
-    pass
+##class Apy:
+##    pass
+##class ApyC:
+##    pass
+##class ApyCT:
+##    pass
 class PyFun(Prc):
     def __init__(self,func):
         self.func = func
@@ -122,12 +122,12 @@ class BlkApp9(BlkLmd9):
 class Undefined(Err):
     pass
 class Env:
-    def __init__(self,var=None,bas=None,varnum=0):
+    def __init__(self,var=None,bas=None,varnum=None):
         self.bas = bas
         assert var is None
         self.var = var or SymTbl()#only Sym allow
-        self.vars=[self.bas]+[None]*varnum
-        self.freeze = True if varnum>0 else False
+        self.vars=[self.bas]+[None]*(varnum if varnum is not None else 0)
+        self.freeze = True if varnum is not None else False
         if self.freeze:
             self.var=None
         self.varsmap=SymTbl()
@@ -150,7 +150,15 @@ class Env:
             raise None
         self.var[sym] = val;
     def lookup(self,sym):
-        assert not self.freeze
+        if self.freeze:
+            try:
+                offset = self.offset(sym)
+                #print offset
+                return self.lookupByOffset(offset)
+            except Undefined as e:
+                return self.lookupByName(sym)#may raise sth
+            assert False,"what!"
+        assert not self.freeze,"here?"
         if sym in self.var:
             return self.var[sym]
         elif self.bas is not None:
@@ -180,13 +188,15 @@ class Env:
         self.var.__setitem__=None
     def lookupByName(self,sym):
         #assert self.freeze
-        if sym in self.var and not self.freeze:
+        if not self.freeze and sym in self.var:
             return self.var[sym]
         if self.bas is not None:
+            #return self.bas.lookup(sym)
             return self.bas.lookupByName(sym)
         else:
             raise Err("I can't understand what '%s' means."%sym)
     def lookupByOffset(self,offsetChain):
+        #print "I'm Happy! 1"
         assert self.freeze
         frame = self
         for i in offsetChain:
@@ -197,12 +207,13 @@ class Env:
                 return frame.vars[i]
         raise None
     def defineByOffset(self,offsetChain,value):
+        #print "I'm Happy! 2"
         assert self.freeze
         assert len(offsetChain)==1
         assert offsetChain[0]>0
         offset = offsetChain[0]
         self.vars[offset]=value    
-    def extendByOffset(self,arg=None,val=None,varnum=0):
+    def extendByOffset(self,arg=None,val=None,varnum=None):
         env = Env(bas=self,varnum=varnum)
         offset=1
         while pairp(arg):
@@ -242,13 +253,6 @@ def dispatch(symtbl,name):
         symtbl[Sym(name)]=f
     return _
 
-##class AQuote(AstNode):
-##    def __init__(self,value):
-##        self.value = value
-##    def dump(self):
-##        value = self.value
-##        return lambda env,c:tuk(c,(value,))
-
 def buildExp10(sexp,cenv):
     return build(sexp,cenv)
 #def Ast():
@@ -264,21 +268,7 @@ class ABegin(AstNode):
         assert isa(seq,Par)
         self.seq = seq
     def dump(self):
-        return progn(self.seq.map(lambda x:x.dump()))
-##class Lmd(Prc):
-##    def __init__(self,lmd,env):
-##        self.lmd = lmd
-##        self.arg = lmd.cdr.car
-##        self.bdy = lmd.cdr.cdr#!!!
-##        self.env = env
-##    def __repr__(self):
-##        return str(self.lmd)
-##    def apply(self,arg):
-##        #print "body>",self.bdy
-##        rt = self.env.extend(self.arg,arg)#entend env here!!!
-##        return self.bdy.map(lambda x:eval(x,rt)).toPyList()[-1]
-##        #fold-left
-##        #return eval(self.bdy,self.env.extend(self.arg,arg))  
+        return progn(self.seq.map(lambda x:x.dump()))  
 class AApply(AstNode):
     def __init__(self,proc,arg,cenv):
         #self.cenv=cenv
@@ -310,9 +300,9 @@ class AValue(AstNode):
     def dump(self):
         value = self.value
         return lambda env,c:tuk(c,(value,))
-    #####feature_local#####
-feature_local=0
-class PrcLocalLmd(Prc):
+#####feature_local#####
+feature_local=1
+class PrcLocalLmd(Prc,BlkLmd9):
     def __init__(self,arg,blk,env,varnum):
         self.arg = arg
         self.bdy = blk#getStmt()
@@ -320,11 +310,11 @@ class PrcLocalLmd(Prc):
         #assert env.freeze
         self.varnum=varnum
     def __repr__(self):
-        return 'LAMBDA '+object.__repr__(self)
+        return 'LAMBDA '+object.__repr__(self) 
     def __call__(self,*arg):
         print ">>>",pyListToSexp(arg)
         return self.apply(pyListToSexp(arg))
-    @broken
+    #@broken
     def apply(self,arg):
         rt = self.env.extendByOffset(self.arg,arg,self.varnum)#extend here!
         assert rt.freeze
@@ -345,21 +335,16 @@ class ALambda(AstNode):
         self.arg,self.bdy=arg,bdy
     def dump(self):
         arg = self.arg
-        #bdy = progn(self.bdy.map(lambda x:x.dump()))
         rtcenv = self.cenv.extendDump(self.arg)#new r
         buildbody = self.bdy.map(lambda x:build(x,rtcenv))
         #bdy = progn(self.bdy.map(lambda x:build(x,rtcenv).dump()))#build here
-        rtcenv.freezeIt()#important for speeed
-        #rtcenv.define(Sym('a'),1) fail here
+        rtcenv.freezeIt() #for speeed
         bdy = progn(buildbody.map(lambda x:x.dump()))
-        #print rtcenv.varnum
-        #PrcLocalLmd
-        #varnum = self.cenv.varnum
         varnum = rtcenv.varnum
         if feature_local:
             return lambda env,c:tuk(c,(PrcLocalLmd(arg, bdy ,env,varnum),))
+        assert not feature_local
         return lambda env,c:tuk(c,(BlkLmd9(arg, bdy ,env),))
-        #return lambda env,c:tuk(c,(PrcLocalLmd(arg, bdy ,env,varnum),))
 class ADefine(AstNode):
     def __init__(self,name,val,cenv):
         self.cenv=cenv
@@ -370,7 +355,8 @@ class ADefine(AstNode):
         name,val = self.name,self.val.dump()
         if self.cenv.freeze and feature_local:
             offset = self.cenv.offset(name)#must find one
-            return lambda env,c:tuk(val,(env,lambda v:c(env.defineByOffset(name,v))))
+            #print "I'm Happy! 3"
+            return lambda env,c:tuk(val,(env,lambda v:c(env.defineByOffset(offset,v))))
         return lambda env,c:tuk(val,(env,lambda v:c(env.define(name,v))))
         #self.cenv.define(name,None)#define here!
         #print "define>",name
@@ -384,74 +370,17 @@ class AIdentifier(AstNode):
         if self.cenv.freeze and feature_local:
             try:
                 offset = self.cenv.offset(name)
+                #print "I'm Happy! 4",offset,name
                 return lambda env,c:tuk(c,(env.lookupByOffset(offset),))
             except Undefined as e:
+                #print "I will be Happy! 5"
                 return lambda env,c:tuk(c,(env.lookupByName(name),))
-        
-        #tryoffset
-        #print "dump>var>",self.cenv.lookup(name)
-        #return lambda env,c:tuk(c,(env.lookupByOffset(env.offset(name)),))
-        return lambda env,c:tuk(c,(env.lookup(name),))
-##class ALocalLambda(AstNode):
-##    def __init__(self,arg,bdy,cenv):
-##        self.cenv=cenv#here
-##        assert isa(arg,Par) or isa(arg,Sym) or arg is None
-##        assert isa(bdy,Par)
-##        self.arg,self.bdy=arg,bdy
-##    def dump(self):
-##        arg = self.arg
-##        #bdy = progn(self.bdy.map(lambda x:x.dump()))
-##        rtcenv = self.cenv.extendDump(self.arg)#new r
-##        #print "newruntime "*5
-##        buildbody = self.bdy.map(lambda x:build(x,rtcenv))
-##        #bdy = progn(self.bdy.map(lambda x:build(x,rtcenv).dump()))#build here
-##        rtcenv.freezeIt()#importtant for speeed
-##        #rtcenv.define(Sym('a'),1) fail here
-##        bdy = progn(buildbody.map(lambda x:x.dump()))
-##        #print rtcenv.varnum
-##        #PrcLocalLmd
-##        varnum = self.cenv.varnum
-##        return lambda env,c:tuk(c,(BlkLmd9(arg, bdy ,env),))
-##        return lambda env,c:tuk(c,(PrcLocalLmd(arg, bdy ,env,varnum),))
-##@broken
-##class ALocalSetter(AstNode):#ALocalDefine
-##    def __init__(self,name,cenv):
-##        self.cenv=cenv
-##        self.name = name
-##    def dump(self):
-##        name = self.name
-##        try:
-##            offset = self.cenv.offset(name)
-##            return lambda env,c:tuk(c,(env.lookupByOffset(offset),))
-##        except Undefined as e:
-##            return lambda env,c:tuk(c,(env.lookup(name),))
-##        #print "dump>var>",self.cenv.lookup(name)
-##        #return lambda env,c:tuk(c,(env.lookupByOffset(offset),))
-##        return lambda env,c:tuk(c,(env.lookupByOffset(env.offset(name)),))
-##@broken    
-##class ALocalDefine(AstNode):
-##    def __init__(self,name,val,cenv):
-##        self.cenv=cenv
-##        assert isa(name,Sym)
-##        assert isa(val,AstNode)
-##        self.name,self.val=name,val
-##    def dump(self):
-##        name,val = self.name,self.val.dump()
-##        offset=self.cenv.offset(name)
-##        return lambda env,c:tuk(val,(env,lambda v:c(env.defineByOffset(env.offset(name),v))))
-##        return lambda env,c:tuk(val,(env,lambda v:c(env.define(name,v))))   
-##@broken    
-##class ALocalIdentifier(AstNode):
-##    def __init__(self,name,cenv):
-##        self.cenv=cenv
-##        self.name = name
-##    def dump(self):
-##        name = self.name
-##        try:
-##            offset = self.cenv.offset(name)
-##            return lambda env,c:tuk(c,(env.lookupByOffset(offset),))
-##        except Undefined as e:
-##            return lambda env,c:tuk(c,(env.lookup(name),))
+            assert False
+        #
+        assert not self.cenv.freeze if feature_local else True
+        #assert not feature_local,name
+        return lambda env,c:tuk(c,(env.lookup(name),))#bug here!
+
 @broken
 class ALocalRef(AstNode):#LValue/RValue
     def __init__(self,name,cenv):
@@ -459,24 +388,14 @@ class ALocalRef(AstNode):#LValue/RValue
         self.name = name
     def dump(self):
         name = self.name
-        #offset = self.offset
-        #print "dump>var>",self.cenv.lookup(name)
-        #return lambda env,c:tuk(c,(env.lookupByOffset(offset),))
         return lambda env,c:tuk(c,(env.lookupByOffset(env.offset(name)),))
 
 topsform = {}
 def buildSfrom():
-##        @dispatch(topsform,'lambda')
-##        def rLambda(sexp,cenv):
-##            #return ALambda(sexp.cdr.car,sexp.cdr.cdr,cenv=cenv)
-##            return ALambda(sexp.cdr.car,sexp.cdr.cdr.map(build),cenv=cenv)#use abegin later?
+##        @dispatch(topsform,'lambda')#use abegin later?
     @dispatch(topsform,'::if')
     def rIf(sexp,cenv):
         return AIf(build(sexp.cdr.car,cenv), build(sexp.cdr.cdr.car,cenv), build(sexp.cdr.cdr.cdr.car,cenv),cenv=cenv)
-    @dispatch(topsform,'::define')
-    def rDefine(sexp,cenv):
-        raise None
-        return ADefine(sexp.cdr.car,build(sexp.cdr.cdr.car),cenv=cenv)
     @dispatch(topsform,'::begin')#remove later!
     def rBegin(sexp,cenv):
         return ABegin(sexp.cdr.map(lambda x:build(x,cenv)),cenv=cenv)
@@ -486,38 +405,22 @@ def buildSfrom():
 buildSfrom()
 def build(sexp,cenv):
     if pairp(sexp):
-        #print "@%s@"%car(sexp) ,
         if car(sexp) is Sym('::define'):
-            #raise None
-            cenv.define(sexp.cdr.car,None)
-            #print "define>",sexp.cdr.car
-            #print "#"*255
+            cenv.define(sexp.cdr.car,None)#move to node
             return ADefine(sexp.cdr.car,build(sexp.cdr.cdr.car,cenv),cenv=cenv)
         if car(sexp) is Sym('lambda'):
             #newcenv=cenv.extendDump(sexp.cdr.car)
             return ALambda(sexp.cdr.car,sexp.cdr.cdr,cenv=cenv)#move build to dump
-            #return ALambda(sexp.cdr.car,sexp.cdr.cdr.map(lambda x:build(x,newcenv)),cenv=cenv)#move buiid to dump
+            #return ALambda(sexp.cdr.car,sexp.cdr.cdr.map(lambda x:build(x,newcenv)),cenv=cenv)
         if car(sexp) in topsform:
             return topsform[car(sexp)](sexp,cenv)
         if symbolp(car(sexp)) and car(sexp) in topmacro:
-            return topmacro[car(sexp)](sexp)
-            return AstNode(topmacro[car(sexp)](sexp),cenv=cenv)
+            return topmacro[car(sexp)](sexp,cenv)
+            #return AstNode(topmacro[car(sexp)](sexp),cenv=cenv)
         return AApply(build(car(sexp),cenv),sexp.cdr.map(lambda x:build(x,cenv)) if sexp.cdr else None,cenv=cenv)
     elif sexp is Sym('call/cc') or sexp is Sym('call-with-current-continuation'):
         return AstNode(lambda env,c:tuk(c,(BlkCwcc9(env),)),cenv=cenv)
     elif isa(sexp,Sym):
-        local = 0
-        if local:
-            return ALocalIdentifier(sexp,cenv)
-####            print "lookup ",sexp
-##        try:
-##            pass
-##            offset = cenv.offset(sexp)
-##            #return ALocalIdentifier(offset,cenv)
-##            #print offset,
-##        except Undefined as e:
-##            pass
-##            #print e
         return AIdentifier(sexp,cenv=cenv)
     else:
         return AValue(sexp,cenv=cenv)
@@ -526,133 +429,6 @@ def build(sexp,cenv):
 topmacro = {}
 #topsform = {}
 topenvrn = Env()
-if 0:
-    def buildExp9(sexp):
-        def buildSfrom():
-            def seqs(sexpbodys):
-                def seq(x,y):
-                    return lambda env,c:tuk(x,(env,lambda v:y(env,c)))
-                def loop(h,t):
-                    if nullp(t):
-                        return h
-                    else:
-                        return loop(seq(h,t.car),t.cdr)
-                bodys = sexpbodys.map(build)#build once
-                return loop(bodys.car,bodys.cdr)
-            @dispatch(topsform,'lambda')
-            def rLambda(sexp):
-                arg = sexp.cdr.car
-                #bdy =  progn(sexp.cdr.cdr.map(build))
-                bdy = seqs(sexp.cdr.cdr)
-                return lambda env,c:tuk(c,(BlkLmd9(arg, bdy ,env),))
-                #return lambda env,c:tuk(c,(BlkLmd9(arg, seqs(sexp.cdr.cdr) ,env),))
-            @dispatch(topsform,'::if')
-            def rIf(sexp):
-                #test,then,fail = map(build,sexp.cdr)#build(sexp.cdr.car)
-                #test,then,fail = sexp.cdr.map(build)#not use map..rec here,flat it
-                test, then, fail = build(sexp.cdr.car), build(sexp.cdr.cdr.car), build(sexp.cdr.cdr.cdr.car)
-                #the last one is much faster
-                #test = build(sexp.cdr.car)
-                #then = build(sexp.cdr.cdr.car)
-                #fail = build(sexp.cdr.cdr.cdr.car)
-                return lambda env,c:tuk(test,(env,lambda v:then(env,c)if truep(v) else fail(env,c)))
-            @dispatch(topsform,'::define')
-            def rDefine(sexp):    
-                name = sexp.cdr.car
-                val = build(sexp.cdr.cdr.car)
-                return lambda env,c:tuk(val,(env,lambda v:c(env.define(name,v))))
-            @dispatch(topsform,'::begin')#remove from runtime later
-            def rBegin(sexp):
-                return seqs(sexp.cdr)
-            #define-syntax
-        ##    elif op==Sym('set!'):
-        ##        assert CanUseMset
-        ##        name = sexp.cdr.car
-        ##        val = build(sexp.cdr.cdr.car)
-        ##        return lambda env,c:tuk(val,(env,lambda v:c(env.mset(name,v))))
-            @dispatch(topsform,'quote')
-            def rQuote(sexp):    
-                val = sexp.cdr.car
-                return lambda env,c:tuk(c,(val,))
-        buildSfrom()
-        raw_define = Sym('::define')
-        def seqs(sexpbodys):
-            def seq(x,y):
-                return lambda env,c:tuk(x,(env,lambda v:y(env,c)))
-            def loop(h,t):
-                if nullp(t):
-                    return h
-                else:
-                    return loop(seq(h,t.car),t.cdr)
-            bodys = sexpbodys.map(build)#build once
-            return loop(bodys.car,bodys.cdr)
-    ##    def form(sexp):
-    ##        assert pairp(sexp)
-    ##        op = car(sexp)
-    ##        if op==Sym('::if'):
-    ##            test = build(sexp.cdr.car)
-    ##            then = build(sexp.cdr.cdr.car)
-    ##            fail = build(sexp.cdr.cdr.cdr.car)
-    ##            return lambda env,c:tuk(test,(env,lambda v:then(env,c)if truep(v) else fail(env,c)))
-    ##        elif op==Sym('lambda'):
-    ##            arg = sexp.cdr.car
-    ##            #bodys = sexp.cdr.cdr.map(build)#to one blk
-    ##            #bodyq = lambda env,c:tuk(reduce,(lambda cont,blk:(lambda v:blk(env,cont)),reversed(bodys.toPyList()),c))
-    ##            return lambda env,c:tuk(c,(BlkLmd9(arg, seqs(sexp.cdr.cdr) ,env),))
-    ##        elif op==raw_define:
-    ##            name = sexp.cdr.car
-    ##            val = build(sexp.cdr.cdr.car)
-    ##            return lambda env,c:tuk(val,(env,lambda v:c(env.define(name,v))))
-    ##        elif op==Sym('::begin'):
-    ##            #bodys = sexp.cdr.map(build)
-    ##            return seqs(sexp.cdr)
-    ##            #return lambda env,c:tuk(val,(env,lambda v:c(env.define(name,v))))
-    ##            #return seqs(bodys)
-    ##            #return tukSeqs(bodys)
-    ##            #return lambda env,c:tuk(val,(env,lambda v:c(env.define(name,v))))
-    ##        #define-syntax
-    ##        elif op==Sym('set!'):
-    ##            assert CanUseMset
-    ##            name = sexp.cdr.car
-    ##            val = build(sexp.cdr.cdr.car)
-    ##            return lambda env,c:tuk(val,(env,lambda v:c(env.mset(name,v))))
-    ##        elif op==Sym('quote'):
-    ##            val = sexp.cdr.car
-    ##            return lambda env,c:tuk(c,(val,))
-    ##        raise Exception(sexp)
-        def build(sexp):
-            if pairp(sexp):
-                #if car(sexp) in [Sym('::if'),Sym('lambda'),Sym('quote'),Sym('::begin'),raw_define,Sym('set!')]:
-                #    return form(sexp)
-                if car(sexp) in topsform:
-                    return topsform[car(sexp)](sexp)
-                if symbolp(car(sexp)) and car(sexp) in topmacro:
-                    #raise "define"
-                    return topmacro[car(sexp)](sexp)
-                op = build(car(sexp))
-                arg = sexp.cdr.map(build) if sexp.cdr else None
-                def get_args(arg,env,cont):
-                    if nullp(arg):
-                        return cont(nil)
-                    else:
-                        return car(arg)(env,lambda v1:get_args(arg.cdr,env,lambda v2:cont(cons(v1,v2))))
-                def app(obj,arg,cont):
-    ##                if isa(obj,BlkLmd4):
-    ##                    raise Exception()
-    ##                    return obj.apply2(arg,cont)
-                    if isa(obj,BlkLmd9):
-                        return obj.apply9(arg,cont)
-                    else:
-                        return cont(obj.apply(arg))
-                
-                return lambda env,c:tuk(op,(env,lambda v1:get_args(arg,env,lambda v2:app(v1,v2,c))))
-            elif sexp==Sym('call/cc') or sexp==Sym('call-with-current-continuation'):
-                return lambda env,c:tuk(c,(BlkCwcc9(env),))
-            elif isa(sexp,Sym):
-                return lambda env,c:tuk(c,(env.lookup(sexp),))
-            else:
-                return lambda env,c:tuk(c,(sexp,))
-        return build(sexp)
 def eval9(sexp,env=Env()):
     #print "eval",sexp
     t=[0]
