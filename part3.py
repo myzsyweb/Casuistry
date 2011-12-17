@@ -38,6 +38,7 @@ class Scm:
 
 def block(f):
     return f()
+#waste=[]
 @block
 def globalMacro():
     def defmacro(code):#not use outside,dut to scope
@@ -49,7 +50,12 @@ def globalMacro():
             trans = Scm.eval(marco_rule,topenvrn)#here?
             #print topenvrn.var.keys()
             #print 'list' in topenvrn.var.keys()
-            #print sexp
+            #print sexp.car
+##            if sexp in waste:
+##                #raise Exception(sexp)
+##                print sexp
+##            else:
+##                waste.append(sexp)
             expended_code = trans.apply(sexp.cdr)
             #print expended_code if pairp(expended_code) and expended_code.car=='cons' else None
             #print expended_code

@@ -66,7 +66,7 @@ class Err(Exception):
 class Obj:
     pass
 nil = None
-CanUseMset = True# and False
+CanUseMset = True #and False
 TypePairImpl = tuple
 if CanUseMset:
     TypePairImpl = list
@@ -164,7 +164,7 @@ class Par(TypePairImpl):
 ##        return iter(self)
     #def pprint
 class Sym(str):
-    pass
+    pass#def __new__
 def symbolp(sym):
     return isa(sym,str) or isa(sym,Sym)
 class Str(str):

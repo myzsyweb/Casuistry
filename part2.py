@@ -107,12 +107,10 @@ class BlkApp9(BlkLmd9):
     def __repr__(self):
         return 'LAMBDA '+object.__repr__(self)
     def apply9(self,arg,cont):
-        xs = sexpToPyList(arg.cdr)
-        #print arg
+        xs = sexpToPyList(arg.cdr)#arg.cdr.cdr.cdr is not None
         if len(xs)>1:
+            xs = sexpToPyList(arg.cdr)
             arg = cons(arg.car,cons(pyListToSexp(xs[0:-1]+sexpToPyList(xs[-1])),nil))
-            #raise Exception(arg)
-            #print arg
         if isa(arg.car,BlkLmd9):
             return arg.car.apply9(arg.cdr.car,cont)
         else:
@@ -121,7 +119,7 @@ class BlkApp9(BlkLmd9):
 ##    pass
 
 ##class SymDct(dict):
-##    pass
+##    pass SymTbl
 topmacro = {}
 topsform = {}
 topenvrn = Env()
@@ -149,6 +147,7 @@ def buildExp9(sexp):
             arg = sexp.cdr.car
             #bodys = sexp.cdr.cdr.map(build)#to one blk
             #bodyq = lambda env,c:tuk(reduce,(lambda cont,blk:(lambda v:blk(env,cont)),reversed(bodys.toPyList()),c))
+            #bdy = seqs(sexp.cdr.cdr)
             return lambda env,c:tuk(c,(BlkLmd9(arg, seqs(sexp.cdr.cdr) ,env),))
         elif op==raw_define:
             name = sexp.cdr.car
