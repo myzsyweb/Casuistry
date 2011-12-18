@@ -17,8 +17,8 @@ class Scm:
         return eval9(read("(::begin %s)"%code)[0],self._env)
     @staticmethod    
     def load(filename,env):
-        with open(os.path.abspath(filename)) as f:
-            return Scm.eval(Scm.read("(::begin %s)"%f.read()),topenvrn)  
+        with open(filename) as f:
+            return Scm.eval(Scm.read("(::begin %s)"%f.read()),env)#?  
     def env(self):
         return self._env
     def repl(self):
@@ -63,7 +63,7 @@ def globalMacro():
             
             #return buildExp9(expended_code)
             return buildExp10(expended_code,cenv)#move to part2 and use cenv
-            return buildExp10(expended_code,topenvrn.extend())
+            #return buildExp10(expended_code,topenvrn.extend())
         topmacro[name] = expend
     def loadMacro(filename):
         with open(os.path.abspath(filename)) as f:
@@ -75,17 +75,7 @@ def globalMacro():
                 if end==-1:
                     break
                 defmacro(code[start:end])
-                start = end        
-##    with open("initsyx.scm") as f:
-##        code = f.read()
-##        #print "file>",code
-##        start = 0
-##        while 1:
-##            t,end = peekSexp(code,start)
-##            if end==-1:
-##                break
-##            defmacro(code[start:end])
-##            start = end
+                start = end 
     loadMacro("initsyx.scm")
     defmacro("""(defmarco define lst
                  (if (pair? (car lst))
@@ -323,4 +313,7 @@ def sh(s):
     return eval9(read(s)[0])
 assert not topenvrn.freeze
 #topenvrn.freezeIt()
+"""
 
+
+"""

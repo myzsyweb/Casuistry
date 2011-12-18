@@ -151,6 +151,9 @@ class Env:
         self.var[sym] = val;
     def lookup(self,sym):
         if self.freeze:
+            #print ">",sym
+            #return self.var[sym]
+            #raise None
             try:
                 offset = self.offset(sym)
                 #print offset
@@ -187,14 +190,14 @@ class Env:
         self.var=self.var
         self.var.__setitem__=None
     def lookupByName(self,sym):
-        #assert self.freeze
+        assert self.freeze
         if not self.freeze and sym in self.var:
             return self.var[sym]
         if self.bas is not None:
-            #return self.bas.lookup(sym)
+            return self.bas.lookup(sym)#important but too slow ...
             return self.bas.lookupByName(sym)
         else:
-            raise Err("I can't understand what '%s' means."%sym)
+            raise Err("I can't understand what '%s' means."%sym)#bug here
     def lookupByOffset(self,offsetChain):
         #print "I'm Happy! 1"
         assert self.freeze
