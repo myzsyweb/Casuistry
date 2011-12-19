@@ -58,7 +58,6 @@ class PyFun(Prc):
         return self.func(*arg)
     def apply(self,arg):
         assert pairp(arg) or nullp(arg) ,arg
-        #print arg,(arg.toPyList() if arg else [])
         return apply(self.func,(arg.toPyList() if arg else []))
 class BlkLmd9(Prc):
     def __init__(self,arg,blk,env):
@@ -75,7 +74,9 @@ class BlkLmd9(Prc):
         def quote(arg):
             return cons(Sym('quote'),cons(arg,nil))
         return eval9(cons(self,arg and arg.map(quote)),rt)
+    @broken
     def apply9(self,arg,cont):
+        raise None
         rt = self.env.extend(self.arg,arg)#extend here!
         #print "????",self.bdy(rt,cont)
         return self.bdy(rt,cont)
@@ -125,29 +126,39 @@ class Env:
     def __init__(self,var=None,bas=None,varnum=None):
         self.bas = bas
         assert var is None
-        self.var = var or SymTbl()#only Sym allow
         self.vars=[self.bas]+[None]*(varnum if varnum is not None else 0)
-        self.freeze = True if varnum is not None else False
+        self._freeze = True if varnum is not None else False
+        self.freeze = self._freeze#True if varnum is not None else False
         if self.freeze:
-            self.var=None
-        self.varsmap=SymTbl()
+            self.var = None
+            self.varsmap = None
+        else:
+            self.var = var or SymTbl()#only Sym allow remove later
+            self.varsmap=SymTbl()
+##        
+##        if self.freeze:
+##            self.varsmap=None
     def __repr__(self):
         return str((self.var,self.bas))
     def define(self,sym,val):
         assert not self.freeze
-        if self.freeze:
-            raise Err("It's so cold that I can't understand any new terms.")
+##        if self.freeze:
+##            raise Err("It's so cold that I can't understand any new terms.")
         #print "define ",sym
 ##        if isa(sym,str):
 ##            sym=Sym(sym)
         #assert sym not in self.var,"I has '%s' already."%sym
-        if sym in self.var:# and not CanUseMset:
+        if sym in self.var:
             raise Err("I has '%s' already."%sym)
-        if sym not in self.var:
+        else:
             self.vars.append(val)
             self.varsmap[sym]=len(self.vars)-1
-        else:
-            raise None
+            self.var[sym] = val;
+##        if sym not in self.var:
+##            self.vars.append(val)
+##            self.varsmap[sym]=len(self.vars)-1
+##        else:
+##            raise None
         self.var[sym] = val;
     def lookup(self,sym):
         if self.freeze:
@@ -155,23 +166,28 @@ class Env:
             #return self.var[sym]
             #raise None
             try:
+##                if not self.freeze:
+##                    raise Undefined(sym)
                 offset = self.offset(sym)
-                #print offset
                 return self.lookupByOffset(offset)
             except Undefined as e:
                 return self.lookupByName(sym)#may raise sth
             assert False,"what!"
-        assert not self.freeze,"here?"
-        if sym in self.var:
-            return self.var[sym]
-        elif self.bas is not None:
-            return self.bas.lookup(sym)
         else:
-            raise Err("I can't understand what '%s' means."%sym)
+            #pass
+            #assert not self.freeze,"here?"
+            if sym in self.var:
+                return self.var[sym]
+            elif self.bas is not None:
+                return self.bas.lookup(sym)
+        raise Err("I can't understand what '%s' means."%sym)
     def offset(self,sym):
         #assert self.freeze
         if not self.freeze:
             raise Undefined(sym)
+        if self.varsmap is None:#bug!
+            raise Undefined(sym)
+        #assert self.varsmap is not None,sym
         if sym in self.varsmap:
             return [self.varsmap[sym]]
         elif self.bas is not None:
@@ -343,11 +359,13 @@ class ALambda(AstNode):
         #bdy = progn(self.bdy.map(lambda x:build(x,rtcenv).dump()))#build here
         rtcenv.freezeIt() #for speeed
         bdy = progn(buildbody.map(lambda x:x.dump()))
-        varnum = rtcenv.varnum
+        varnum = rtcenv.varnum#some runtime info
         if feature_local:
-            return lambda env,c:tuk(c,(PrcLocalLmd(arg, bdy ,env,varnum),))
+            return lambda env,c:tuk(c,(PrcLocalLmd(arg, bdy ,env,varnum),))#use env to find local
+            #insert outter local in self's env
         assert not feature_local
-        return lambda env,c:tuk(c,(BlkLmd9(arg, bdy ,env),))
+        #return lambda env,c:tuk(c,(BlkLmd9(arg, bdy ,env),))
+        raise None
 class ADefine(AstNode):
     def __init__(self,name,val,cenv):
         self.cenv=cenv
@@ -358,9 +376,9 @@ class ADefine(AstNode):
         name,val = self.name,self.val.dump()
         if self.cenv.freeze and feature_local:
             offset = self.cenv.offset(name)#must find one
-            #print "I'm Happy! 3"
             return lambda env,c:tuk(val,(env,lambda v:c(env.defineByOffset(offset,v))))
-        return lambda env,c:tuk(val,(env,lambda v:c(env.define(name,v))))
+        else:
+            return lambda env,c:tuk(val,(env,lambda v:c(env.define(name,v))))
         #self.cenv.define(name,None)#define here!
         #print "define>",name
         #return lambda env,c:tuk(val,(env,lambda v:c(env.define(name,v))))
@@ -372,17 +390,17 @@ class AIdentifier(AstNode):
         name = self.name
         if self.cenv.freeze and feature_local:
             try:
-                offset = self.cenv.offset(name)
+                offset = self.cenv.offset(name)#if being my local or my parent's local
                 #print "I'm Happy! 4",offset,name
                 return lambda env,c:tuk(c,(env.lookupByOffset(offset),))
-            except Undefined as e:
+            except Undefined as e:#let offset return None here
                 #print "I will be Happy! 5"
                 return lambda env,c:tuk(c,(env.lookupByName(name),))
-            assert False
-        #
-        assert not self.cenv.freeze if feature_local else True
-        #assert not feature_local,name
-        return lambda env,c:tuk(c,(env.lookup(name),))#bug here!
+            #assert False
+        else:
+            #assert not self.cenv.freeze if feature_local else True
+            return lambda env,c:tuk(c,(env.lookup(name),))#bug here!
+        raise None
 
 @broken
 class ALocalRef(AstNode):#LValue/RValue
