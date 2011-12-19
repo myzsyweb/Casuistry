@@ -1,4 +1,4 @@
-#tail-call
+﻿#tail-call
 from cst1 import *
 import sys
 sys.setrecursionlimit(600)
@@ -120,9 +120,10 @@ class BlkApp9(BlkLmd9):
             return cont(arg.car.apply(arg.cdr.car))
 ##def macroExpend(sexp):
 ##    pass
-class Undefined(Err):
+class Undefined(Err):#remove later
     pass
-class Env:
+from collections import OrderedDict
+class Env:#split methods to small piece functions
     def __init__(self,var=None,bas=None,varnum=None):
         self.bas = bas
         assert var is None
@@ -130,12 +131,14 @@ class Env:
         self._freeze = True if varnum is not None else False
         self.freeze = self._freeze#True if varnum is not None else False
         if self.freeze:
-            self.var = None
+            self.var = None#remove later
             self.varsmap = None
         else:
             self.var = var or SymTbl()#only Sym allow remove later
             self.varsmap=SymTbl()
-##        
+        if feature_local2:
+            self.uplocal=OrderedDict()
+            self.uplocals=[]#use self.vars[0] later and let self.bas to my father       
 ##        if self.freeze:
 ##            self.varsmap=None
     def __repr__(self):
@@ -211,7 +214,7 @@ class Env:
             return self.var[sym]
         if self.bas is not None:
             return self.bas.lookup(sym)#important but too slow ...
-            return self.bas.lookupByName(sym)
+            #return self.bas.lookupByName(sym)
         else:
             raise Err("I can't understand what '%s' means."%sym)#bug here
     def lookupByOffset(self,offsetChain):
@@ -259,6 +262,26 @@ class Env:
             env.define(arg,val)
         return env
     #give more info here!!!!
+    def lookupLocal(self,place):
+        return self.vars[place]
+    def lookupUplocal(self,place):
+        return self.uplocals[place]
+    def lookupOffsetLocal(self,sym):
+        try:
+            if sym in self.varmaps:
+                return self.varmaps[sym]
+        except AttributeError:
+            print "d"
+##        try:
+##            if sym in self.uplocal:
+##                return (0,self.uplocal[sym])
+##        except AttributeError:
+##            print "d"
+        if sym in self.bas.uplocal:
+            return (0,self.uplocal[sym])
+        assert None
+        #self.varmaps
+        #self.uplocal
 def progn(bodys):
     def seq(x,y):
         return lambda env,c:tuk(x,(env,lambda v:y(env,c)))
@@ -281,7 +304,7 @@ class AstNode:#no `build' here must dump before use
         self.dumped = dumped
     def dump(self):
         return self.dumped
-class ABegin(AstNode):
+class ABegin(AstNode):#lat lambda use it
     def __init__(self,seq,cenv):
         #self.cenv=cenv
         assert isa(seq,Par)
@@ -319,8 +342,10 @@ class AValue(AstNode):
     def dump(self):
         value = self.value
         return lambda env,c:tuk(c,(value,))
-#####feature_local#####
-feature_local=1
+#####==================================feature_local===================================#####
+feature_local=1#must be 1
+feature_local2=0
+####======================FLAG=======#####
 class PrcLocalLmd(Prc,BlkLmd9):
     def __init__(self,arg,blk,env,varnum):
         self.arg = arg
@@ -328,23 +353,23 @@ class PrcLocalLmd(Prc,BlkLmd9):
         self.env = env
         #assert env.freeze
         self.varnum=varnum
+        if feature_local2:
+            self.localnum=varnum
+            self.uplocalnum=0
     def __repr__(self):
         return 'LAMBDA '+object.__repr__(self) 
     def __call__(self,*arg):
         print ">>>",pyListToSexp(arg)
         return self.apply(pyListToSexp(arg))
-    #@broken
     def apply(self,arg):
         rt = self.env.extendByOffset(self.arg,arg,self.varnum)#extend here!
         assert rt.freeze
         def quote(arg):
             return cons(Sym('quote'),cons(arg,nil))
-        return eval9(cons(self,arg and arg.map(quote)),rt)
+        return eval9(cons(self,arg and arg.map(quote)),rt)#use apply_arg later
     def apply9(self,arg,cont):
-        #rt = self.env.extend(self.arg,arg)#extend here!
         rt = self.env.extendByOffset(self.arg,arg,self.varnum)#extend here!
         assert rt.freeze
-        #print "????",self.bdy(rt,cont)
         return self.bdy(rt,cont)
 class ALambda(AstNode):
     def __init__(self,arg,bdy,cenv):
@@ -355,22 +380,71 @@ class ALambda(AstNode):
     def dump(self):
         arg = self.arg
         rtcenv = self.cenv.extendDump(self.arg)#new r
-        buildbody = self.bdy.map(lambda x:build(x,rtcenv))
+        buildbody = self.bdy.map(lambda x:build(x,rtcenv))#build here
         #bdy = progn(self.bdy.map(lambda x:build(x,rtcenv).dump()))#build here
         rtcenv.freezeIt() #for speeed
-        bdy = progn(buildbody.map(lambda x:x.dump()))
+        bdy = progn(buildbody.map(lambda x:x.dump()))#dump here
         varnum = rtcenv.varnum#some runtime info
         if feature_local:
+            if feature_local2:
+                pass
+                def tukLambda(env,c):
+                    localLambda = PrcLocalLmd(arg, bdy ,env,varnum)
+                    #localLambda.uplocalnum=len(rtcenv.uplocal)
+                    if rtcenv.uplocal.values():
+                        print rtcenv.uplocal.values()
+                    #can not use offset directly,lookupOffsetLocal
+                    env.uplocals=list(map(lambda x:env.lookupByOffset(x),rtcenv.uplocal.values()))#fail due to out is flatted
+                    return tuk(c,(localLambda,))
+                    #cenv.uplocal.values()
+                    #lookup ref by offset here
+                    #env.lookupByOffset
+                    #lookupByName#fail
+                    return tuk(c,(PrcLocalLmd(arg, bdy ,env,varnum),))
+                #return tukLambda
             return lambda env,c:tuk(c,(PrcLocalLmd(arg, bdy ,env,varnum),))#use env to find local
             #insert outter local in self's env
-        assert not feature_local
-        #return lambda env,c:tuk(c,(BlkLmd9(arg, bdy ,env),))
-        raise None
+##        assert not feature_local
+##        #return lambda env,c:tuk(c,(BlkLmd9(arg, bdy ,env),))
+##        raise None
+        assert None
+class AIdentifier(AstNode):
+    def __init__(self,name,cenv):
+        self.cenv=cenv
+        self.name = name
+    def dump(self):
+        name = self.name
+        if self.cenv.freeze and feature_local:
+            try:
+                offset = self.cenv.offset(name)#if being my local or my parent's local
+                if feature_local2:
+                    offset=self.cenv.lookupOffsetLocal(name)#wronr
+                    if offset[0]==0:#嵌套的话
+                        self.cenv.uplocal[name]=offset#insert uplocal here
+                        place=self.cenv.uplocal.keys().index(name)
+                        return lambda env,c:tuk(c,(env.lookupUplocal(place),))
+                        pass
+                    else:
+                        pass
+                        place = offset[0]
+                        return lambda env,c:tuk(c,(env.lookupLocal(place),))
+                #print "I'm Happy! 4",offset,name
+                return lambda env,c:tuk(c,(env.lookupByOffset(offset),))
+            except Undefined as e:#let offset return None here
+                #print "I will be Happy! 5"
+                return lambda env,c:tuk(c,(env.lookupByName(name),))
+            #assert False
+        else:
+            #assert not self.cenv.freeze if feature_local else True
+            return lambda env,c:tuk(c,(env.lookup(name),))#bug here!
+        assert None
 class ADefine(AstNode):
     def __init__(self,name,val,cenv):
         self.cenv=cenv
+        #cenv.define(name,None)#move here
         assert isa(name,Sym)
         assert isa(val,AstNode)
+        cenv.define(name,None)#move here
         self.name,self.val=name,val
     def dump(self):
         name,val = self.name,self.val.dump()
@@ -382,25 +456,6 @@ class ADefine(AstNode):
         #self.cenv.define(name,None)#define here!
         #print "define>",name
         #return lambda env,c:tuk(val,(env,lambda v:c(env.define(name,v))))
-class AIdentifier(AstNode):
-    def __init__(self,name,cenv):
-        self.cenv=cenv
-        self.name = name
-    def dump(self):
-        name = self.name
-        if self.cenv.freeze and feature_local:
-            try:
-                offset = self.cenv.offset(name)#if being my local or my parent's local
-                #print "I'm Happy! 4",offset,name
-                return lambda env,c:tuk(c,(env.lookupByOffset(offset),))
-            except Undefined as e:#let offset return None here
-                #print "I will be Happy! 5"
-                return lambda env,c:tuk(c,(env.lookupByName(name),))
-            #assert False
-        else:
-            #assert not self.cenv.freeze if feature_local else True
-            return lambda env,c:tuk(c,(env.lookup(name),))#bug here!
-        raise None
 
 @broken
 class ALocalRef(AstNode):#LValue/RValue
@@ -427,18 +482,19 @@ buildSfrom()
 def build(sexp,cenv):
     if pairp(sexp):
         if car(sexp) is Sym('::define'):
-            cenv.define(sexp.cdr.car,None)#move to node
+            #cenv.define(sexp.cdr.car,None)#move to node
             return ADefine(sexp.cdr.car,build(sexp.cdr.cdr.car,cenv),cenv=cenv)
-        if car(sexp) is Sym('lambda'):
+        elif car(sexp) is Sym('lambda'):
             #newcenv=cenv.extendDump(sexp.cdr.car)
             return ALambda(sexp.cdr.car,sexp.cdr.cdr,cenv=cenv)#move build to dump
             #return ALambda(sexp.cdr.car,sexp.cdr.cdr.map(lambda x:build(x,newcenv)),cenv=cenv)
-        if car(sexp) in topsform:
+        elif car(sexp) in topsform:
             return topsform[car(sexp)](sexp,cenv)
-        if symbolp(car(sexp)) and car(sexp) in topmacro:
+        elif symbolp(car(sexp)) and car(sexp) in topmacro:
             return topmacro[car(sexp)](sexp,cenv)
             #return AstNode(topmacro[car(sexp)](sexp),cenv=cenv)
-        return AApply(build(car(sexp),cenv),sexp.cdr.map(lambda x:build(x,cenv)) if sexp.cdr else None,cenv=cenv)
+        else:
+            return AApply(build(car(sexp),cenv),sexp.cdr.map(lambda x:build(x,cenv)) if sexp.cdr else None,cenv=cenv)
     elif sexp is Sym('call/cc') or sexp is Sym('call-with-current-continuation'):
         return AstNode(lambda env,c:tuk(c,(BlkCwcc9(env),)),cenv=cenv)
     elif isa(sexp,Sym):
@@ -459,6 +515,7 @@ def eval9(sexp,env=Env()):
     #print "eval9]",buildExp9(sexp)(env,ret)
     #tukrun(buildExp9(sexp)(env,ret))
     tukrun(buildExp10(sexp,cenv=Env()).dump()(env,ret))
+    #return tukrun(buildExp10(sexp,cenv=Env()).dump()(env,lambda x:None,x))
     return t[0]
 
 print eval9(read('1')[0])
