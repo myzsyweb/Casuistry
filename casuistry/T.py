@@ -123,11 +123,11 @@ def listp(lst):
     elif pairp(lst.cdr):
         return listp(cdr(lst))
     return False
-class T:
-    @staticmethod
-    def map():
-        pass
-    pass
+##class T:
+##    @staticmethod
+##    def map():
+##        pass
+##    pass
 class Chr(str):#not use it,do as python do
     def toPyInt(self):
         return ord(self)
@@ -137,8 +137,8 @@ def charp(ch):
     return isa(ch,str) and len(ch)==1#use int later to support unicode
 from collections import Iterable
 class Par(Iterable):#(TypePairImpl):
-    def __init__(self,val):
-        self._val = val
+    def __init__(self,pair):
+        self._val = pair
     @property
     def car(self):
         return self._val[0]
@@ -315,7 +315,7 @@ class Prc:
         if self.pred:
             return self.pred(arg)
         else:
-            raise NotImplementedError
+            raise NotImplementedError()
 def procedurep(obj):
     return isa(obj,Prc)
 class Reader:
@@ -415,7 +415,7 @@ def peekSexp(text,start=0):
 ##            return False,end
         raise NotImplemented
     return sexp(text,start)
-read = peekSexp
+#read = peekSexp#remove later
 def eq(x,y):
     return (x is y)
 def eqv(x,y):

@@ -418,9 +418,9 @@ class ALambda(AstNode):
             return lambda env,c:tuk(c,(PrcLocalLmd(arg, bdy ,env,varnum),))#use env to find local
             #insert outter local in self's env
 ##        assert not feature_local
-##        #return lambda env,c:tuk(c,(BlkLmd9(arg, bdy ,env),))
+        return lambda env,c:tuk(c,(BlkLmd9(arg, bdy ,env),))
 ##        raise None
-        assert None
+        #assert None
 class AIdentifier(AstNode):
     def __init__(self,name,cenv):
         self.cenv=cenv
@@ -525,9 +525,10 @@ def defmacro(sexp):#not use outside,dut to scope
     #print sexp
     #sexp = Scm.read(code)
     assert sexp.car==Sym('defmarco') or sexp.car==Sym('defmacro')#shoud defmacro
-    name = sexp.cdr.car
-    marco_rule = cons(Sym('lambda'),sexp.cdr.cdr)
+    name,marco_rule = sexp.cdr.car,cons(Sym('lambda'),sexp.cdr.cdr)
+    #marco_rule = cons(Sym('lambda'),sexp.cdr.cdr)
     def expend(sexp,cenv):
+        #return buildExp10(Scm.eval(marco_rule,topenvrn).apply(sexp.cdr),cenv)
         trans = Scm.eval(marco_rule,topenvrn)#late here
         expended_code = trans.apply(sexp.cdr)
         return buildExp10(expended_code,cenv)
@@ -536,22 +537,22 @@ def defmacro(sexp):#not use outside,dut to scope
 topenvrn = Env()
 def eval9(sexp,env=Env()):
     return tukrun(buildExp10(sexp,cenv=Env()).dump()(env,lambda x:(None,x)))
-    #print "eval",sexp
-    t=[0]
-    def ret(val):
-        t[0] = val
-        return None,(val,)
-    #print "eval9]",buildExp9(sexp)(env,ret)
-    #tukrun(buildExp9(sexp)(env,ret))
-    tukrun(buildExp10(sexp,cenv=Env()).dump()(env,ret))
-    #return tukrun(buildExp10(sexp,cenv=Env()).dump()(env,lambda x:(None,x)))
-    return t[0]
+##    #print "eval",sexp
+##    t=[0]
+##    def ret(val):
+##        t[0] = val
+##        return None,(val,)
+##    #print "eval9]",buildExp9(sexp)(env,ret)
+##    #tukrun(buildExp9(sexp)(env,ret))
+##    tukrun(buildExp10(sexp,cenv=Env()).dump()(env,ret))
+##    #return tukrun(buildExp10(sexp,cenv=Env()).dump()(env,lambda x:(None,x)))
+##    return t[0]
 class Scm:
     def __init__(self,toplevel=None):
         toplevel=toplevel if toplevel else topenvrn
         self._env = toplevel.extend()
     def sh(self,code):
-        return eval9(read("(::begin %s)"%code)[0],self._env)
+        return eval9(peekSexp("(::begin %s)"%code)[0],self._env)
     @staticmethod    
     def load(filename,env):
         with open(filename) as f:
@@ -569,7 +570,7 @@ class Scm:
                 print e
     @staticmethod
     def read(sexp):
-        return read(sexp)[0]
+        return peekSexp(sexp)[0]
     @staticmethod
     def eval(sexp,env):
         return eval9(sexp,env)
@@ -615,17 +616,17 @@ def block(f):
 ##    #return defmacro
 ###defmacro = globalMacro
 ###defmacro = globalMacro
-print eval9(read('1')[0])
-print eval9(read('(::define a 1)')[0])
-print buildExp10(read('(::define a 1)')[0],Env())
+eval9(peekSexp('1')[0])
+eval9(peekSexp('(::define a 1)')[0])
+buildExp10(peekSexp('(::define a 1)')[0],Env())
 defmacro(T.peekSexp("""(defmarco begin lst (cons '::begin lst))""")[0])
 Scm.load("initsyx.scm",topenvrn)
 Scm.load("quasiquote.scm",topenvrn)
 Scm.load("do.scm",topenvrn)
 Scm.load("initsyn2.scm",topenvrn)
 
-#################
-topenvrn.define(Sym("apply"),BlkApp9())
+###################################################################
+topenvrn.define(Sym("apply"),BlkApp9())##
 #define("apply",BlkApp9())
 import P
 P.makePrim(lambda k,v:topenvrn.define(k,v),topenvrn,Scm)
