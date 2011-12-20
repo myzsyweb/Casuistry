@@ -1,5 +1,6 @@
 ﻿#tail-call
-from cst1 import *
+from T import *
+import T
 import sys
 sys.setrecursionlimit(600)
 def pyListToSexp(lst):
@@ -51,14 +52,14 @@ def tukrun(tuk):
 ##    pass
 ##class ApyCT:
 ##    pass
-class PyFun(Prc):
-    def __init__(self,func):
-        self.func = func
-    def __call__(self,*arg):
-        return self.func(*arg)
-    def apply(self,arg):
-        assert pairp(arg) or nullp(arg) ,arg
-        return apply(self.func,(arg.toPyList() if arg else []))
+##class PyFun(Prc):
+##    def __init__(self,func):
+##        self.func = func
+##    def __call__(self,*arg):
+##        return self.func(*arg)
+##    def apply(self,arg):
+##        assert pairp(arg) or nullp(arg) ,arg
+##        return apply(self.func,(arg.toPyList() if arg else []))
 class BlkLmd9(Prc):
     def __init__(self,arg,blk,env):
         self.arg = arg
@@ -491,7 +492,7 @@ def buildSfrom():
     def rQuote(sexp,cenv):
         return AValue(sexp.cdr.car,cenv=cenv)
 buildSfrom()
-def build(sexp,cenv):
+def build(sexp,cenv,macro=None):
     if pairp(sexp):
         if car(sexp) is Sym('::define'):
             #cenv.define(sexp.cdr.car,None)#move to node
@@ -500,6 +501,10 @@ def build(sexp,cenv):
             #newcenv=cenv.extendDump(sexp.cdr.car)
             return ALambda(sexp.cdr.car,sexp.cdr.cdr,cenv=cenv)#move build to dump
             #return ALambda(sexp.cdr.car,sexp.cdr.cdr.map(lambda x:build(x,newcenv)),cenv=cenv)
+        elif macro is None and car(sexp) is Sym('defmacro') or  car(sexp) is Sym('defmarco'):#misspell
+            defmacro(sexp)
+            return AValue(None,cenv=cenv)
+            return AValue(defmacro(sexp),cenv=cenv)
         elif car(sexp) in topsform:
             return topsform[car(sexp)](sexp,cenv)
         elif symbolp(car(sexp)) and car(sexp) in topmacro:
@@ -516,9 +521,21 @@ def build(sexp,cenv):
 #return build(sexp,cenv)
 #===============================================================================================#
 topmacro = {}
+def defmacro(sexp):#not use outside,dut to scope
+    #print sexp
+    #sexp = Scm.read(code)
+    assert sexp.car==Sym('defmarco') or sexp.car==Sym('defmacro')#shoud defmacro
+    name = sexp.cdr.car
+    marco_rule = cons(Sym('lambda'),sexp.cdr.cdr)
+    def expend(sexp,cenv):
+        trans = Scm.eval(marco_rule,topenvrn)#late here
+        expended_code = trans.apply(sexp.cdr)
+        return buildExp10(expended_code,cenv)
+    topmacro[name] = expend
 #topsform = {}
 topenvrn = Env()
 def eval9(sexp,env=Env()):
+    return tukrun(buildExp10(sexp,cenv=Env()).dump()(env,lambda x:(None,x)))
     #print "eval",sexp
     t=[0]
     def ret(val):
@@ -527,13 +544,88 @@ def eval9(sexp,env=Env()):
     #print "eval9]",buildExp9(sexp)(env,ret)
     #tukrun(buildExp9(sexp)(env,ret))
     tukrun(buildExp10(sexp,cenv=Env()).dump()(env,ret))
-    #return tukrun(buildExp10(sexp,cenv=Env()).dump()(env,lambda x:None,x))
+    #return tukrun(buildExp10(sexp,cenv=Env()).dump()(env,lambda x:(None,x)))
     return t[0]
+class Scm:
+    def __init__(self,toplevel=None):
+        toplevel=toplevel if toplevel else topenvrn
+        self._env = toplevel.extend()
+    def sh(self,code):
+        return eval9(read("(::begin %s)"%code)[0],self._env)
+    @staticmethod    
+    def load(filename,env):
+        with open(filename) as f:
+            return Scm.eval(Scm.read("(::begin %s)"%f.read()),env)#?
+    @staticmethod 
+    def fastLoad(self):
+        pass
+    def env(self):
+        return self._env
+    def repl(self):
+        while True:
+            try:
+                print self.sh(raw_input('scm> '))
+            except Exception as e:
+                print e
+    @staticmethod
+    def read(sexp):
+        return read(sexp)[0]
+    @staticmethod
+    def eval(sexp,env):
+        return eval9(sexp,env)
+    @staticmethod
+    def nilEnv(sexp,env):
+        return Env()
 
+def block(f):
+    return f()
+###waste=[]
+###@block
+##def globalMacro():
+##    def defmacro(code):#not use outside,dut to scope
+##        sexp = Scm.read(code)
+##        assert sexp.car==Sym('defmarco')#shoud defmacro
+##        name = sexp.cdr.car
+##        marco_rule = cons(Sym('lambda'),sexp.cdr.cdr)
+##        def expend(sexp,cenv):
+##            trans = Scm.eval(marco_rule,topenvrn)#late
+##            expended_code = trans.apply(sexp.cdr)
+##            return buildExp10(expended_code,cenv)
+##        topmacro[name] = expend
+##    def loadMacro(filename):#move to eval but limit
+##        with open(filename) as f:
+##            code = f.read()
+##            start = 0
+##            while 1:
+##                t,end = peekSexp(code,start)
+##                if end==-1:
+##                    break
+##                defmacro(code[start:end])
+##                start = end 
+##    loadMacro("initsyx.scm")
+##    defmacro("""(defmarco define lst
+##                 (if (pair? (car lst))
+##                     (cons '::define (cons (car (car lst)) (cons (cons 'lambda (cons (cdr (car lst)) (cdr lst))) '())))
+##                     (cons '::define lst))))""")
+##    #defvar
+##    defmacro("""(defmarco begin lst (cons '::begin lst))""")
+##    #loadMacro("quasiquote.scm")
+##    #loadMacro("do.scm")
+##    #loadMacro("initsyn2.scm")
+##    #return defmacro
+###defmacro = globalMacro
+###defmacro = globalMacro
 print eval9(read('1')[0])
 print eval9(read('(::define a 1)')[0])
 print buildExp10(read('(::define a 1)')[0],Env())
+defmacro(T.peekSexp("""(defmarco begin lst (cons '::begin lst))""")[0])
+Scm.load("initsyx.scm",topenvrn)
+Scm.load("quasiquote.scm",topenvrn)
+Scm.load("do.scm",topenvrn)
+Scm.load("initsyn2.scm",topenvrn)
 
-
-
-
+#################
+topenvrn.define(Sym("apply"),BlkApp9())
+#define("apply",BlkApp9())
+import P
+P.makePrim(lambda k,v:topenvrn.define(k,v),topenvrn,Scm)

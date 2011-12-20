@@ -1,2 +1,2 @@
-from csp3 import *
+from E import *
 __all__=['Scm']

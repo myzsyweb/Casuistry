@@ -95,6 +95,9 @@ def mSetCar(pair,val):
 def mset_cdr(pair,val):
     assert CanUseMset
     pair.cdr=val
+def mSetCar(pair,val):
+    assert CanUseMset
+    pair.cdr=val
 def nullp(obj):
     return obj is None
 def pairp(pair):
