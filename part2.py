@@ -147,8 +147,8 @@ def buildExp9(sexp):
             arg = sexp.cdr.car
             #bodys = sexp.cdr.cdr.map(build)#to one blk
             #bodyq = lambda env,c:tuk(reduce,(lambda cont,blk:(lambda v:blk(env,cont)),reversed(bodys.toPyList()),c))
-            #bdy = seqs(sexp.cdr.cdr)
-            return lambda env,c:tuk(c,(BlkLmd9(arg, seqs(sexp.cdr.cdr) ,env),))
+            bdy = seqs(sexp.cdr.cdr)
+            return lambda env,c:tuk(c,(BlkLmd9(arg, bdy ,env),))
         elif op==raw_define:
             name = sexp.cdr.car
             val = build(sexp.cdr.cdr.car)

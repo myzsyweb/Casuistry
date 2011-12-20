@@ -192,6 +192,7 @@ class Env:#split methods to small piece functions
             raise Undefined(sym)
         #assert self.varsmap is not None,sym
         if sym in self.varsmap:
+            #self.cache()#important
             return [self.varsmap[sym]]
         elif self.bas is not None:
             return [0]+self.bas.offset(sym)
@@ -377,6 +378,13 @@ class ALambda(AstNode):
         assert isa(arg,Par) or isa(arg,Sym) or arg is None
         assert isa(bdy,Par)
         self.arg,self.bdy=arg,bdy
+##        #arg = self.arg
+##        rtcenv = self.cenv.extendDump(self.arg)#new r
+##        buildbody = self.bdy.map(lambda x:build(x,rtcenv))#build here
+##        #bdy = progn(self.bdy.map(lambda x:build(x,rtcenv).dump()))#build here
+##        rtcenv.freezeIt() #for speeed
+##        self.bdy = progn(buildbody.map(lambda x:x.dump()))#dump here
+##        self.varnum = rtcenv.varnum#some runtime info            
     def dump(self):
         arg = self.arg
         rtcenv = self.cenv.extendDump(self.arg)#new r
@@ -385,6 +393,10 @@ class ALambda(AstNode):
         rtcenv.freezeIt() #for speeed
         bdy = progn(buildbody.map(lambda x:x.dump()))#dump here
         varnum = rtcenv.varnum#some runtime info
+##
+##        arg=self.arg
+##        bdy=self.bdy
+##        varnum=self.varnum
         if feature_local:
             if feature_local2:
                 pass

@@ -160,6 +160,9 @@ def _():
             bindPyFun("cdr",cdr)
             bindPyFun("set-car!",mset_car)
             bindPyFun("set-cdr!",mset_cdr)
+            @defun("list")
+            def _(arg):
+                return arg
 
     @block
     def equal():

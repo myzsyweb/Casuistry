@@ -4,7 +4,7 @@ class Test(unittest.TestCase):
     def setUp(self):
         self.s = Scm()
         import sys
-        sys.setrecursionlimit(200)
+        sys.setrecursionlimit(600)
     def testBase(self):
         self.assertEqual(self.s.sh("1"), 1)
         self.assertEqual(self.s.sh("(+ 1 1)"), 2)

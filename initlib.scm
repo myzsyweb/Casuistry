@@ -1,4 +1,4 @@
-(define list (lambda x x))
+;(define list (lambda x x))
 (define cdar (lambda (x) (cdr (car x))))
 (define cadr (lambda (x) (car (cdr x))))
 
