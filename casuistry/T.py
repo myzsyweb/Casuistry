@@ -30,6 +30,9 @@ def isa(obj,typ):
     return isinstance(obj,typ)
 #######################lex#########################
 #|(?P<cmt>;[^\n\r]*[\n\t])
+#|(?P<int>[-+]?\d+)
+#|(?P<fix>[-+]?\d+(/\d+)?)
+#|(?P<flo>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)
 import re
 pattern = r'''
  (?P<lpr>\()
@@ -231,7 +234,7 @@ def numberp(x):
 class Num(Fraction):
     def __repr__(self):
         return str(self)
-class NumFix(int):#long
+class NumFix(Fraction):#int/long
     pass
 class NumFlo(float):
     pass
@@ -241,6 +244,8 @@ class Vec(list):
     pass
 def vectorp(vec):
     return isa(vec,list) or isa(vec,tuple) or isa(vec,Vec)
+class Tbl(dict):#table
+    pass
 class Ref:
     def get(self):
         return self._val
@@ -426,6 +431,9 @@ def check(ture):
     if not ture:
         raise Exception()
     return True
+#display==print str(x)
+#write==print repr(x)
+#read==print eval(x)
 assert not eq('1',Sym('1'))
 assert not eqv('1',Sym('1'))
 assert not equal('1',Sym('1'))
