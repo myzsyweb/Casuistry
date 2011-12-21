@@ -1,4 +1,4 @@
-﻿from T import *
+from T import *
 import T
 import sys
 sys.setrecursionlimit(600)
@@ -38,7 +38,7 @@ class BlkLmd9(Prc):
     def __call__(self,*arg):
         #print ">>>",pyListToSexp(arg)
         return self.apply(pyListToSexp(arg))
-    def apply(self,arg):
+    def apply(self,arg):#call apply9 then
         rt = self.env.extend(self.arg,arg)
         def quote(arg):
             return cons(Sym('quote'),cons(arg,nil))
@@ -91,6 +91,8 @@ class BlkApp9(BlkLmd9):
 class Undefined(Err):#remove later
     pass
 from collections import OrderedDict
+class Globe:
+    pass
 class Frame:#list
     def __init__(self,glob=None,upvars=tuple(),varnum=0):
         self.glob = glob
@@ -111,13 +113,23 @@ class Frame:#list
     def defineLocal(self,offset,value):
         assert self.vars[offset] is None
         self.vars[offset]=value
+    def extendFrame(self,arg=None,val=None,varnum=0,upvars=tuple()):
+        frame = Frame(glob=self.glob,varnum=varnum,upvars=upvars)
+        offset=1
+        while pairp(arg):
+            frame.defineLocal(offset,car(val))
+            arg,val=map(cdr,(arg,val))
+            offset+=1
+        if not nullp(arg):
+            frame.defineLocal(offset,val)
+        return frame
 class Env:#split methods to small piece functions
     def __init__(self,var=None,bas=None,varnum=None):
         self.bas = bas
         assert var is None
         self.vars=[self.bas]+[None]*(varnum if varnum is not None else 0)
         self._freeze = True if varnum is not None else False
-        self.freeze = self._freeze#True if varnum is not None else False
+        self.freeze = self._freeze
         if self.freeze:
             self.var = None#remove later
             self.varsmap = None
@@ -130,54 +142,43 @@ class Env:#split methods to small piece functions
     def __repr__(self):
         return str((self.var,self.bas))
     def define(self,sym,val):
-        assert not self.freeze,"It's so cold that I can't understand any new terms."
+        assert not self.freeze
         if sym in self.var:
             raise Err("I has '%s' already."%sym)
         else:
             self.vars.append(val)
             self.varsmap[sym]=len(self.vars)-1
             self.var[sym] = val
-        self.var[sym] = val;
     def lookup(self,sym):
         if self.freeze:
-            #print ">",sym
-            #return self.var[sym]
-            #raise None
-            try:
-                offset = self.offset(sym)
-                if offset is None:
-                    raise Undefined()
+            offset = self.offset(sym)
+            if offset is None:
+                return self.lookupByName(sym)
+            else:
                 return self.lookupByOffset(offset)
-            except Undefined as e:
-                return self.lookupByName(sym)#may raise sth
-            assert False,"what!"
         else:
-            #assert not self.freeze,"here?"
             if sym in self.var:
                 return self.var[sym]
             elif self.bas is not None:
                 return self.bas.lookup(sym)
         raise Err("I can't understand what '%s' means."%sym)
     def offset(self,sym):
-        #assert self.freeze
         if not self.freeze:
             return None
         if self.varsmap is None:#bug!
             return None
         #assert self.varsmap is not None,sym
         if sym in self.varsmap:
-            if feature_local2:
-                self.uplocal[sym]=1#important
             return [self.varsmap[sym]]
         elif self.bas is not None:
             offset=self.bas.offset(sym)
             if offset is None:
+                if feature_local2:
+                    self.uplocal[sym]=None
                 return None
             return [0]+offset
         else:
             return None
-##    def lookupRef(self):
-##        raise None
     @property
     def varnum(self):
         assert self.freeze
@@ -189,26 +190,20 @@ class Env:#split methods to small piece functions
         self.var.__setitem__=None
     def lookupByName(self,sym):
         assert self.freeze
-        if not self.freeze and sym in self.var:
-            return self.var[sym]
         if self.bas is not None:
-            return self.bas.lookup(sym)#important but too slow ...
-            #return self.bas.lookupByName(sym)
+            return self.bas.lookup(sym)
         else:
-            raise Err("I can't understand what '%s' means."%sym)#bug here
+            raise Err("I can't understand what '%s' means."%sym)
     def lookupByOffset(self,offsetChain):
-        #print "I'm Happy! 1"
         assert self.freeze
         frame = self
         for i in offsetChain:
             if i==0:
                 frame=frame.vars[0]
             else:
-                #print i
                 return frame.vars[i]
         raise None
     def defineByOffset(self,offsetChain,value):
-        #print "I'm Happy! 2"
         assert self.freeze
         assert len(offsetChain)==1
         assert offsetChain[0]>0
@@ -342,14 +337,20 @@ class PrcLocalLmd(Prc,BlkLmd9):
         print ">>>",pyListToSexp(arg)
         return self.apply(pyListToSexp(arg))
     def apply(self,arg):
-        rt = self.env.extendByOffset(self.arg,arg,self.varnum)#extend here!
+        if feature_local2:
+            rt = self.env.extendFrame(self.arg,arg,upvars=self.upvars,varnum=self.varnum)       
+        else:
+            rt = self.env.extendByOffset(self.arg,arg,self.varnum)#extend here!
         assert rt.freeze
         def quote(arg):
             return cons(Sym('quote'),cons(arg,nil))
         return eval9(cons(self,arg and arg.map(quote)),rt)#use apply_arg later
     def apply9(self,arg,cont):
+        if feature_local2:
+            rrt = self.env.extendFrame(self.arg,arg,upvars=self.upvars,varnum=self.varnum)
+            assert rrt.freeze
+            return self.bdy(rrt,cont)
         rt = self.env.extendByOffset(self.arg,arg,self.varnum)#extend here!
-        #rrt = Frame(glob=self.env,upvars=self.upvars,varnum=self.varnum)
         assert rt.freeze
         return self.bdy(rt,cont)
 class ALambda(AstNode):
@@ -365,30 +366,14 @@ class ALambda(AstNode):
         rtcenv.freezeIt() #for speeed
         bdy = progn(buildbody.map(lambda x:x.dump()))#dump here
         varnum = rtcenv.varnum#some runtime info
-##
-##        arg=self.arg
-##        bdy=self.bdy
-##        varnum=self.varnum
-        #if 1:
         if feature_local2:
+            upvarsmap=[cenv.uplocal.keys().index(i) for i in rtcenv.uplocal.keys()]
             def tukLambda(env,c):
-                #upvars=env
-                localLambda = PrcLocalLmd(arg, bdy ,env,varnum)#upvars
-                #localLambda.uplocalnum=len(rtcenv.uplocal)
-                if rtcenv.uplocal.values():
-                    print rtcenv.uplocal.values()
-                #can not use offset directly,lookupOffsetLocal
-                #env.uplocals=list(map(lambda x:env.lookupByOffset(x),rtcenv.uplocal.values()))#fail due to out is flatted
-                return tuk(c,(localLambda,))
-                #cenv.uplocal.values()
-                #lookup ref by offset here
-                #env.lookupByOffset
-                #lookupByName#fail
-                return tuk(c,(PrcLocalLmd(arg, bdy ,env,varnum),))
-            #return tukLambda
+                #not work right yet
+                upvars=[env.lookupUplocal(i) for i in upvarsmap]
+                return tuk(c,(PrcLocalLmd(arg, bdy ,env,varnum,upvars),))
+            return tukLambda
         return lambda env,c:tuk(c,(PrcLocalLmd(arg, bdy ,env,varnum),))#use env to find local
-
-        #return lambda env,c:tuk(c,(BlkLmd9(arg, bdy ,env),))
 class AIdentifier(AstNode):
     def __init__(self,name,cenv):
         self.cenv=cenv
@@ -396,23 +381,18 @@ class AIdentifier(AstNode):
     def dump(self):
         name = self.name
         if self.cenv.freeze:
-            try:
-                offset = self.cenv.offset(name)#if being my local or my parent's local
-                if offset is None:
-                    raise Undefined()
-                if feature_local2:
-                    offset=self.cenv.lookupOffsetLocal(name)#wronr
-                    if offset[0]==0:#嵌套的话
-                        #self.cenv.uplocal[name]=True#insert uplocal here
-                        place=self.cenv.uplocal.keys().index(name)
-                        return lambda env,c:tuk(c,(env.lookupUplocal(place),))
-                    else:
-                        place = offset[0]
-                        return lambda env,c:tuk(c,(env.lookupLocal(place),))
-                return lambda env,c:tuk(c,(env.lookupByOffset(offset),))#
-            except Undefined as e:#let offset return None here
+            offset = self.cenv.offset(name)#if being my local or my parent's local
+            if offset is None:
                 return lambda env,c:tuk(c,(env.lookupByName(name),))#is glob
-            #assert False
+            if feature_local2:
+                if offset[0]==0:
+                    place=self.cenv.uplocal.keys().index(name)
+                    return lambda env,c:tuk(c,(env.lookupUplocal(place),))
+                else:
+                    place = offset[0]
+                    return lambda env,c:tuk(c,(env.lookupLocal(place),))
+
+            return lambda env,c:tuk(c,(env.lookupByOffset(offset),))
         else:#if glob is found use AValue here
             return lambda env,c:tuk(c,(env.lookup(name),))#bug here!
         assert None
