@@ -367,7 +367,7 @@ class ALambda(AstNode):
         bdy = progn(buildbody.map(lambda x:x.dump()))#dump here
         varnum = rtcenv.varnum#some runtime info
         if feature_local2:
-            upvarsmap=[cenv.uplocal.keys().index(i) for i in rtcenv.uplocal.keys()]
+            upvarsmap=[cenv.varmap[i]if i in cenv.varmap else [0]+cenv.uplocal.keys().index(i) for i in rtcenv.uplocal.keys()]
             def tukLambda(env,c):
                 #not work right yet
                 upvars=[env.lookupUplocal(i) for i in upvarsmap]
