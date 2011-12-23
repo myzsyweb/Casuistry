@@ -1,4 +1,4 @@
-一个简单的Python制Scheme实现
+﻿一个简单的Python制Scheme实现
 #+begin_quote
 Programming languages should be designed not by piling feature on top of feature, but by removing the weaknesses and restrictions that make additional features appear necessary. Scheme demonstrates that a very small number of rules for forming expressions, with no restrictions on how they are composed, suffice to form a practical and efficient programming language that is flexible enough to support most of the major programming paradigms in use today.
 ——摘自《R5RS·Introduction》
@@ -163,3 +163,4 @@ Nov.2011~
  + [[http://www.biwascheme.org/][biwascheme]]
  + [[https://hkn.eecs.berkeley.edu/~dyoo/python/pyscheme/][pyscheme]]
  + psyche
+ + Heist

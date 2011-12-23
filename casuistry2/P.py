@@ -300,7 +300,7 @@ def makePrim(add,topenvrn,Scm):
             bindPyFun("symbol?",symbolp)
             bindPyFun("char?",charp)
             #Scm.load("libtinyscheme.scm",topenvrn)#move to singlepart later
-    assert not topenvrn.freeze
+    #xassert not topenvrn.freeze
 #makePrim(lambda k,v:topenvrn.define(k,v))
 @block
 def topExtend():

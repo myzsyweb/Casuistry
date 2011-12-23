@@ -118,15 +118,17 @@ class Globe:#Env
             offset+=1
         if not nullp(arg):
             frame.defineLocal(offset,val)
-        return frame    
+        return frame
+    def copy(self):#??? may slow
+        assert None
 class Frame:#list
     def __init__(self,glob=None,upvars=tuple(),varnum=0):
         self.glob = glob#use [Undefined] for Ref()
         self.vars=[0]+[Ref() for i in range(varnum)]#*varnum
         self.upvars=upvars#ref list
-    @property
-    def freeze(self):
-        return True
+##    @property
+##    def freeze(self):#remove later
+##        return True
     @property
     def frozen(self):
         return True
@@ -146,8 +148,7 @@ class Frame:#list
         assert isa(offset,int)
         return self.upvars[offset].get()
     def defineLocal(self,offset,value):
-        #assert self.vars[offset] is Undefined
-        assert self.vars[offset].undefined,self.vars[offset].get()
+        assert not self.vars[offset].defined,self.vars[offset].get()
         #self.vars[offset]=value
         self.vars[offset].set(value)
     def extendFrame(self,arg=None,val=None,varnum=0,upvars=tuple()):
@@ -160,7 +161,7 @@ class Frame:#list
         if not nullp(arg):
             frame.defineLocal(offset,val)
         return frame
-class Env:#Scope
+class Env:#rename to Scope later,only used when comp...
     #split methods to small piece functions
     def extendFrame(self,arg=None,val=None,varnum=0,upvars=tuple()):
         frame = Frame(glob=self,varnum=varnum,upvars=upvars)
@@ -178,32 +179,34 @@ class Env:#Scope
         assert varnum is None
         self.vars=[self.bas]#+[None]*(varnum if varnum is not None else 0)
         self._frozen = False#True if varnum is not None else False
-        self.freeze = self._frozen
-##        if self.freeze:
+        #self.frozen = self._frozen
+##        if self.frozen:
 ##            self.var = None#remove later
 ##            self.varsmap = None
 ##        else:
-        self.var = SymTbl()# var or SymTbl()#only Sym allow,remove later
+        #self.var = SymTbl()# var or SymTbl()#only Sym allow,remove later
         self.varsmap=SymTbl()
         #if feature_local2:
         self.uplocal=OrderedDict()
+        #macros=[]
             #self.uplocals=[]#use self.vars[0] later and let self.bas to my father
-        assert not self.freeze
+        assert not self.frozen
     @property
     def frozen(self):
         return self._frozen
     def __repr__(self):
-        return str((self.var,self.bas))
+        return str((["%s : %s"%(i,self.vars[i]) for i in self.varsmap],self.bas))
+        #return str((self.var,self.bas))
     def define(self,sym,val):
         assert not self.frozen
-        if sym in self.var:
+        if sym in self.varsmap:#self.var:
             raise Err("I has '%s' already."%sym)
         else:
             self.vars.append(val)
             self.varsmap[sym]=len(self.vars)-1
-            self.var[sym] = val
+            #self.var[sym] = val
     def lookup(self,sym):
-##        if self.freeze:
+##        if self.frozen:
 ##            offset = self.offset(sym)
 ##            raise None
 ##            if offset is None:
@@ -211,51 +214,51 @@ class Env:#Scope
 ##            else:
 ##                return self.lookupByOffset(offset)
 ##        else:
-        if not self.frozen and  sym in self.var:
-            return self.var[sym]
+        if not self.frozen and sym in self.varsmap:
+            return self.vars[self.varsmap[sym]]
         elif self.bas is not None:
             return self.bas.lookup(sym)
         else:
             raise Err("I can't understand what '%s' means."%sym)
     def offset(self,sym):
-        if not self.freeze:
+        if not self.frozen:
             return None
-        if self.varsmap is None:#bug!
-            return None
+        #assert self.varsmap is not None
+##        if self.varsmap is None:#bug!
+##            return None
         #assert self.varsmap is not None,sym
-        if sym in self.varsmap:
+        elif sym in self.varsmap:
             return [self.varsmap[sym]]
         elif self.bas is not None:
             offset=self.bas.offset(sym)
             if offset is None:
                 return None
             else:
-                #if feature_local2:
-                    #print 'cache',sym
-                self.uplocal[sym]="used"
+                self.uplocal[sym]=None#"used"
                 return [0]+offset
         else:
             return None
     @property
     def varnum(self):
-        assert self.freeze
+        assert self.frozen
         return len(self.vars)-1
     def freezeIt(self):
-        assert not self.freeze
-        self.freeze = True
+        assert not self.frozen
+        #self.frozen = True
         self._frozen = True
-        self.var=self.var
-        self.var.__setitem__=None
+        self.varsmap.__setitem__=None
+        #self.var=self.var
+        #self.var.__setitem__=None
 ##    @broken
 ##    def lookupByName(self,sym):
-##        assert self.freeze
+##        assert self.frozen
 ##        if self.bas is not None:
 ##            return self.bas.lookup(sym)
 ##        else:
 ##            raise Err("I can't understand what '%s' means."%sym)
 ##    @broken
 ##    def lookupByOffset(self,offsetChain):
-##        assert self.freeze
+##        assert self.frozen
 ##        frame = self
 ##        for i in offsetChain:
 ##            if i==0:
@@ -265,7 +268,7 @@ class Env:#Scope
 ##        raise None
 ##    @broken
 ##    def defineByOffset(self,offsetChain,value):
-##        assert self.freeze
+##        assert self.frozen
 ##        assert len(offsetChain)==1
 ##        assert offsetChain[0]>0
 ##        offset = offsetChain[0]
@@ -390,7 +393,7 @@ class PrcLocalLmd(Prc,BlkLmd9):
         self.arg = arg
         self.bdy = blk#getStmt()
         self.env = env
-        #assert env.freeze
+        #assert env.frozen
         self.varnum=varnum
         self.upvars=upvars
 ##        if feature_local2:
@@ -408,7 +411,7 @@ class PrcLocalLmd(Prc,BlkLmd9):
 ##            #return tukrun(buildExp10(sexp,cenv=Env()).dump()(rt,lambda x:(None,x)))
 ##        else:
 ##            rt = self.env.extendByOffset(self.arg,arg,self.varnum)#extend here!
-        assert rt.freeze
+        assert rt.frozen
         def quote(arg):
             return cons(Sym('quote'),cons(arg,nil))
         return eval9(cons(self,arg and arg.map(quote)),rt)#use apply_arg later
@@ -416,10 +419,10 @@ class PrcLocalLmd(Prc,BlkLmd9):
     def apply9(self,arg,cont):
 ##        if feature_local2:
         rt = self.env.extendFrame(self.arg,arg,upvars=self.upvars,varnum=self.varnum)
-        assert rt.freeze
+        assert rt.frozen
         return self.bdy(rt,cont)
         #rt = self.env.extendByOffset(self.arg,arg,self.varnum)#extend here!
-        #assert rt.freeze
+        #assert rt.frozen
         #return self.bdy(rt,cont)
 class ALambda(AstNode):
     def __init__(self,arg,bdy,cenv):
@@ -440,7 +443,7 @@ class ALambda(AstNode):
         assert all(i in cenv.uplocal.keys() or i in cenv.varsmap for i in rtcenv.uplocal.keys())
         upvarsmap=[[cenv.varsmap[i]] if i in cenv.varsmap else [0]+[cenv.uplocal.keys().index(i)] for i in rtcenv.uplocal.keys()]
         def tukLambda(env,c):
-            upvars=[env.lookupLocalRef(i[0]) if i[0]!=0 else env.lookupUplocalRef(i[1]) for i in upvarsmap]
+            upvars=[env.lookupLocalRef(i[0]) if i[0]!=0 else env.lookupUplocalRef(i[1]) for i in upvarsmap]#important
             #根据编译时的映射获取变量的值引用
             assert all(i is not None for i in upvars)
             return tuk(c,(PrcLocalLmd(arg, bdy ,env,varnum,upvars),))
@@ -451,7 +454,7 @@ class AIdentifier(AstNode):
         self.name = name
     def dump(self):
         name = self.name
-        if self.cenv.freeze:
+        if self.cenv.frozen:
             offset = self.cenv.offset(name)#if being my local or my parent's local
             if offset is None:
                 return lambda env,c:tuk(c,(env.lookupGlobal(name),))#is glob
@@ -476,7 +479,7 @@ class ADefine(AstNode):
         self.name,self.val=name,val
     def dump(self):
         name,val = self.name,self.val.dump()
-        if self.cenv.freeze:
+        if self.cenv.frozen:
             offset = self.cenv.offset(name)#must find one
             place=offset[0]
             return lambda env,c:tuk(val,(env,lambda v:c(env.defineLocal(place,v))))
@@ -506,9 +509,10 @@ def build(sexp,cenv,macro=None):
             return ALambda(sexp.cdr.car,sexp.cdr.cdr,cenv=cenv)#move build to dump
             #return ALambda(sexp.cdr.car,sexp.cdr.cdr.map(lambda x:build(x,newcenv)),cenv=cenv)
         elif macro is None and car(sexp) is Sym('defmacro') or  car(sexp) is Sym('defmarco'):#misspell
-            defmacro(sexp)
-            return AValue(None,cenv=cenv)
+            #defmacro(sexp)
+            return AValue(defmacro(sexp) and None,cenv=cenv)
             #return AValue(defmacro(sexp),cenv=cenv)
+        #define-macro
         elif car(sexp) in topsform:
             return topsform[car(sexp)](sexp,cenv)
         elif symbolp(car(sexp)) and car(sexp) in topmacro:
@@ -541,7 +545,7 @@ def eval9(sexp,env=Env()):
 class Scm:
     def __init__(self,toplevel=None):
         toplevel=toplevel if toplevel else topenvrn
-        self._env = toplevel.extend()
+        self._env = toplevel.extend()#??????
     def sh(self,code):
         return eval9(peekSexp("(::begin %s)"%code)[0],self._env)
     @staticmethod    

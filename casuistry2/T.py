@@ -26,9 +26,9 @@
 #export api
 #__all__=[]
 #public = lambda func:__all__.append(func.__name__)
-def isa(obj,typ):
-    return isinstance(obj,typ)
-#isa=isinstance
+##def isa(obj,typ):
+##    return isinstance(obj,typ)
+isa=isinstance
 #######################lex#########################
 #|(?P<cmt>;[^\n\r]*[\n\t])
 #|(?P<int>[-+]?\d+)
@@ -77,12 +77,13 @@ class Obj:
     pass
 nil = None
 CanUseMset = True and False and False
-TypePairImpl = tuple
-if CanUseMset:
-    TypePairImpl = list
+##TypePairImpl = tuple
+##if CanUseMset:
+##    TypePairImpl = list
 def cons(car,cdr):
     return Par.cons(car,cdr)
 def car(pair):
+    #assert is(pair,Par)
     #return pair[0]
     return pair.car
 def cdr(pair):
@@ -108,22 +109,24 @@ def nullp(obj):
 def pairp(pair):
     return isa(pair,Par)
 def sexpToPyList(pair):
-    pyList = []
-    while not nullp(pair):
-        pyList.append(car(pair))
-        pair = cdr(pair)
-    return pyList
+    return pair.toPyList()if pair else []
+##    pyList = []
+##    while not nullp(pair):
+##        pyList.append(car(pair))
+##        pair = cdr(pair)
+##    return pyList
 def pairToPyList(pair):
-    pyList = []
-    while not nullp(pair):
-        pyList.append(car(pair))
-        pair = cdr(pair)
-    return pyList
+    return pair.toPyList()if pair else []
+##    pyList = []
+##    while not nullp(pair):
+##        pyList.append(car(pair))
+##        pair = cdr(pair)
+##    return pyList
     #must no rec here!
 def listp(lst):
     if nullp(lst):
         return True
-    if pairp(lst) and nullp(lst.cdr):
+    elif pairp(lst) and nullp(lst.cdr):
         return True
     elif pairp(lst.cdr):
         return listp(cdr(lst))
@@ -185,30 +188,7 @@ class Par(Iterable):#(TypePairImpl):
                 self = self.cdr
             assert nullp(self)
         return iter(self)
-##        class iter:
-##            def __init__(self,pair):
-##                self.pair = pair
-##            def next(self):
-##                if nullp(self.pair):
-##                    raise StopIteration
-####                elif not pairp(self.pair):
-####                    raise Err('not a list')
-##                item = self.pair.car
-##                self.pair = self.pair.cdr
-##                return item
-##        return iter(self)
-    #def pprint
 from weakref import WeakValueDictionary
-##class Sym(str):
-##    pass
-##class Sym:#use str is faster
-##    def __init__(self,sym):
-##        assert isa(sym,str)
-##        self._val = sym
-##    def __eq__(self,obj):
-##        return isa(obj,Sym) and self._val==obj._val
-##    def __hash__(self):
-##        return hash(self._val)
 class Sym(object):#(str):
     c = {}#WeakValueDictionary()
     def __new__(cls,sym):
@@ -224,7 +204,7 @@ class Sym(object):#(str):
     def __repr__(self):
         return str(self)
 def symbolp(sym):
-    return isa(sym,Sym)# or isa(sym,Sym)x
+    return isa(sym,Sym)
 class Str(str):
     pass
 def stringp(obj):
@@ -236,6 +216,8 @@ def numberp(x):
 class Num(Fraction):
     def __repr__(self):
         return str(self)
+##class NumInt(Fraction):#int/long
+##    pass
 class NumFix(Fraction):#int/long
     pass
 class NumFlo(float):
