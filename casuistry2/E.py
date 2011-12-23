@@ -93,16 +93,36 @@ class Undefined(Err):
     pass
 from collections import OrderedDict
 class Globe:#Env
-    def define():
-        pass
-    def lookup():
-        pass
-    def extend():
-        pass
+    def __init__(self,bas=None):
+        self.bas = bas
+        self.var = SymTbl()
+    def __repr__(self):
+        return str((self.var,self.bas))
+    def define(self,sym,val):
+        if sym in self.var:
+            raise Err("I has '%s' already."%sym)
+        self.var[sym] = val;
+    def lookup(self,sym):
+        if sym in self.var:
+            return self.var[sym]
+        elif self.bas is not None:
+            return self.bas.lookup(sym)
+        else:
+            raise Err("I can't understand what '%s' means."%sym)
+    def extendFrame(self,arg=None,val=None,varnum=0,upvars=tuple()):
+        frame = Frame(glob=self,varnum=varnum,upvars=upvars)
+        offset=1
+        while pairp(arg):
+            frame.defineLocal(offset,car(val))
+            arg,val=map(cdr,(arg,val))
+            offset+=1
+        if not nullp(arg):
+            frame.defineLocal(offset,val)
+        return frame    
 class Frame:#list
     def __init__(self,glob=None,upvars=tuple(),varnum=0):
         self.glob = glob#use [Undefined] for Ref()
-        self.vars=[True]+[Ref() for i in range(varnum)]#*varnum
+        self.vars=[0]+[Ref() for i in range(varnum)]#*varnum
         self.upvars=upvars#ref list
     @property
     def freeze(self):
