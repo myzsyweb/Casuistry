@@ -230,7 +230,7 @@ def vectorp(vec):
     return isa(vec,list) or isa(vec,tuple) or isa(vec,Vec)
 class Tbl(dict):#table
     pass
-class Ref:#too slow
+class Ref:#too slow#remove
     def __init__(self):
         self.undefined=True
     def get(self):
@@ -256,6 +256,9 @@ class SymTbl(dict):
     def __setitem__(self,key, val):
         assert isa(key,Sym)
         return dict.__setitem__(self,key,val)
+class Undefined:
+    pass
+undefined=Undefined()
 ##if 0:
 ##    #EnvReflection
 ##    class Env:

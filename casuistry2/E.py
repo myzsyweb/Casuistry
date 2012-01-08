@@ -19,6 +19,9 @@ class Tuk(tuple):
 def tuk(cont,arg):
     assert isa(arg,tuple)
     return Tuk((cont,arg))
+def myself(*values):
+    #assert x is None,x
+    return values
 def cnt(self):
     return self
 def runtail(f,x):
@@ -366,7 +369,7 @@ class AApply(AstNode):
         op = self.proc.dump()
         arg = self.arg.map(lambda x:x.dump()) if self.arg else None
         #return lambda env,c:check(op) and tuk(op,(env,lambda v1:apply_args(arg,env,lambda v2:app(v1,v2,c)))) 
-        return lambda env,c:tuk(op,(env,lambda v1:apply_args(arg,env,lambda v2:app(v1,v2,c))))     
+        return lambda env,c:tuk(myself,op(env,lambda v1:apply_args(arg,env,lambda v2:app(v1,v2,c))))     
 class AIf(AstNode):
     def __init__(self,test,then,fail,cenv):
         #self.cenv=cenv
@@ -376,7 +379,8 @@ class AIf(AstNode):
         self.test,self.then,self.fail = test,then,fail
     def dump(self):
         test,then,fail = self.test.dump(),self.then.dump(),self.fail.dump()
-        return lambda env,c:tuk(test,(env,lambda v:then(env,c) if truep(v) else fail(env,c)))
+        return lambda env,c:tuk(myself,test(env,lambda v:then(env,c) if truep(v) else fail(env,c)))
+        #return lambda env,c:tuk(test,(env,lambda v:then(env,c) if truep(v) else fail(env,c)))
 class AValue(AstNode):
     def __init__(self,value,cenv):
         #self.cenv=cenv
